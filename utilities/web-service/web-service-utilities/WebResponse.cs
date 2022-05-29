@@ -15,6 +15,8 @@ namespace WebServiceUtilities
                     return Error_NotImplemented_ContentType;
                 case 500:
                     return Error_InternalError_ContentType;
+                case 429:
+                    return Error_TooManyRequests_ContentType;
                 case 415:
                     return Error_UnsupportedMediaType_ContentType;
                 case 409:
@@ -43,6 +45,8 @@ namespace WebServiceUtilities
                     return Error_NotImplemented_String(_Message);
                 case 500:
                     return Error_InternalError_String(_Message);
+                case 429:
+                    return Error_TooManyRequests_String(_Message);
                 case 415:
                     return Error_UnsupportedMediaType_String(_Message);
                 case 409:
@@ -75,6 +79,13 @@ namespace WebServiceUtilities
         public static string Error_NotImplemented_String(string _Message) { return $"{{\"result\":\"failure\",\"message\":\"Not Implemented. {_Message}\"}}"; }
         public static readonly int Error_NotImplemented_Code = 501;
         public static WebServiceResponse NotImplemented(string _Message) { return new WebServiceResponse(Error_NotImplemented_Code, new StringOrStream(Error_NotImplemented_String(_Message)), Error_NotImplemented_ContentType); }
+
+        //
+
+        public static readonly string Error_TooManyRequests_ContentType = "application/json";
+        public static string Error_TooManyRequests_String(string _Message) { return $"{{\"result\":\"failure\",\"message\":\"Too many requests. {_Message}\"}}"; }
+        public static readonly int Error_TooManyRequests_Code = 500;
+        public static WebServiceResponse TooManyRequests(string _Message) { return new WebServiceResponse(Error_TooManyRequests_Code, new StringOrStream(Error_TooManyRequests_String(_Message)), Error_TooManyRequests_ContentType); }
 
         //
 
