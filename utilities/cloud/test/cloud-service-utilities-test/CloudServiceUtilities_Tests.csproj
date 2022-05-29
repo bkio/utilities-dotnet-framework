@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>CloudServiceUtilities_Tests</RootNamespace>
+    <StartupObject>CloudServiceUtilitiesTest.Program</StartupObject>
+    <BaseOutputPath>$(SolutionDir)binaries\</BaseOutputPath>
+    
+	<OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+	
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\cloud-service-utilities-db-service-aws\CloudServiceUtilities_DatabaseService_AWS.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-db-service-gc\CloudServiceUtilities_DatabaseService_GC.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-db-service-mongodb\CloudServiceUtilities_DatabaseService_MongoDB.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-file-service-aws\CloudServiceUtilities_FileService_AWS.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-file-service-az\CloudServiceUtilities_FileService_AZ.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-file-service-gc\CloudServiceUtilities_FileService_GC.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-log-service-aws\CloudServiceUtilities_LogService_AWS.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-log-service-az\CloudServiceUtilities_LogService_AZ.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-log-service-basic\CloudServiceUtilities_LogService_Basic.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-log-service-gc\CloudServiceUtilities_LogService_GC.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-mail-service-sendgrid\CloudServiceUtilities_MailService_SendGrid.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-memory-service-redis\CloudServiceUtilities_MemoryService_Redis.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-pubsub-service-aws\CloudServiceUtilities_PubSubService_AWS.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-pubsub-service-az\CloudServiceUtilities_PubSubService_AZ.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-pubsub-service-gc\CloudServiceUtilities_PubSubService_GC.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-pubsub-service-redis\CloudServiceUtilities_PubSubService_Redis.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-sms-service-twilio\CloudServiceUtilities_SMSService_Twilio.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-tracing-service-gc\CloudServiceUtilities_TracingService_GC.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-tracing-service-zipkin\CloudServiceUtilities_TracingService_Zipkin.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-vm-service-az\CloudServiceUtilities_VMService_AZ.csproj" />
+    <ProjectReference Include="..\..\cloud-service-utilities-vm-service-gc\CloudServiceUtilities_VMService_GC.csproj" />
+  </ItemGroup>
+
+</Project>

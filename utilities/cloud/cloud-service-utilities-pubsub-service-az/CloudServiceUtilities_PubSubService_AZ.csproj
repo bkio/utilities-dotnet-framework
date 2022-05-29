@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<TargetFramework>netstandard2.1</TargetFramework>
+	<Nullable>disable</Nullable>
+	<BaseOutputPath>$(SolutionDir)binaries\</BaseOutputPath>
+	
+	<OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+	
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Messaging.EventGrid" Version="4.8.1" />
+    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.38.0" />
+    <PackageReference Include="Microsoft.Azure.ServiceBus" Version="5.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\cloud-service-utilities\CloudServiceUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

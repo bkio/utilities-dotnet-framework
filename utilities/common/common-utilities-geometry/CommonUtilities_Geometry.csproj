@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Platforms>x64</Platforms>
+    <Nullable>disable</Nullable>
+	<BaseOutputPath>$(SolutionDir)binaries\</BaseOutputPath>
+	<OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\common-utilities\CommonUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

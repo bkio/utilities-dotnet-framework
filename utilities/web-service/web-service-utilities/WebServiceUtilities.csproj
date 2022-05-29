@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+	<TargetFramework>netstandard2.1</TargetFramework>
+	<Nullable>disable</Nullable>
+	<BaseOutputPath>$(SolutionDir)binaries\</BaseOutputPath>
+	
+	<OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+	
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Fleck" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\common\common-utilities\CommonUtilities.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Platforms>x64</Platforms>
+	<BaseOutputPath>$(SolutionDir)binaries\</BaseOutputPath>
+	<OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Content\Models\HDmonkey.obj" />
+    <None Remove="Content\Models\HDMonkeyLod1.obj" />
+    <None Remove="Content\Models\HDMonkeyLod2.obj" />
+    <None Remove="Content\Models\HDMonkeyLod3.obj" />
+    <None Remove="Content\Models\monkey.obj" />
+    <None Remove="Content\Models\monkeyLod1.obj" />
+    <None Remove="Content\Models\monkeyLod2.obj" />
+    <None Remove="Content\Models\squishymonkey.obj" />
+    <None Remove="Content\Models\squishymonkeyLod1.obj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Content\Models\HDmonkey.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Models\HDMonkeyLod1.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Models\HDMonkeyLod2.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Models\HDMonkeyLod3.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Models\monkey.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Models\monkeyLod1.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Models\monkeyLod2.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Models\squishymonkey.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Content\Models\squishymonkeyLod1.obj">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\sdk-file-format-dotnet\SDKFileFormatDotnet.csproj" />
+  </ItemGroup>
+
+</Project>
