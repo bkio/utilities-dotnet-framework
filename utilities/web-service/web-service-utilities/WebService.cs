@@ -295,11 +295,14 @@ namespace WebServiceUtilities
                                             bTryDisposingWS = false;
 
                                             var WSHandler = _Callback as WebAndWebSocketServiceBase;
-                                            WSHandler.OnWebSocketRequest_Internal(WSContext, new WeakReference<WebService>(this), _ServerLogAction);
                                             lock (AliveWSHandlers)
                                             {
                                                 AliveWSHandlers.Add(WSHandler);
                                             }
+                                            TaskWrapper.Run(() =>
+                                            {
+                                                WSHandler.OnWebSocketRequest_Internal(WSContext, new WeakReference<WebService>(this), _ServerLogAction);
+                                            });
                                         }
                                         return;
                                     }
