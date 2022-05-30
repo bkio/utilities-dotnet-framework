@@ -247,11 +247,12 @@ namespace WebServiceUtilities
                                             // Calling `AcceptWebSocketAsync` on the `HttpListenerContext` will accept the WebSocket connection,
                                             // sending the required 101 response to the client and return an instance of `WebSocketContext`.
                                             // IMPORTANT!: So do not use Http Response write/alter functionality from here on!
-                                            var AcceptSocketTask = Context.AcceptWebSocketAsync(subProtocol: null);
-                                            AcceptSocketTask.Wait();
-                                            WSContext = AcceptSocketTask.Result;
-
-                                            WS = WSContext.WebSocket;
+                                            using (var AcceptSocketTask = Context.AcceptWebSocketAsync(subProtocol: null))
+                                            {
+                                                AcceptSocketTask.Wait();
+                                                WSContext = AcceptSocketTask.Result;
+                                                WS = WSContext.WebSocket;
+                                            }
                                         }
                                         catch (Exception e)
                                         {
@@ -276,7 +277,10 @@ namespace WebServiceUtilities
                                         {
                                             if (!(_Callback is WebAndWebSocketServiceBase))
                                             {
-                                                WS.CloseAsync(WebSocketCloseStatus.InternalServerError, "An internal error has occurred.", CancellationToken.None).Wait();
+                                                using (var CloseTask = WS.CloseAsync(WebSocketCloseStatus.InternalServerError, "An internal error has occurred.", CancellationToken.None))
+                                                {
+                                                    CloseTask.Wait();
+                                                }
                                                 _ServerLogAction?.Invoke($"WebService->Error: {Context.Request.RawUrl} supposed to be listened by a WebAndWebSocketServiceBase, but it is not.");
                                                 return;
                                             }
@@ -287,7 +291,10 @@ namespace WebServiceUtilities
                                     }
                                     else if (WSContext != null)
                                     {
-                                        WS.CloseAsync(WebSocketCloseStatus.ProtocolError, "Only HTTP requests are accepted for this endpoint.", CancellationToken.None).Wait();
+                                        using (var CloseTask = WS.CloseAsync(WebSocketCloseStatus.ProtocolError, "Only HTTP requests are accepted for this endpoint.", CancellationToken.None))
+                                        {
+                                            CloseTask.Wait();
+                                        }
                                         return;
                                     }
                                 }
