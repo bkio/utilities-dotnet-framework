@@ -94,8 +94,8 @@ namespace WebServiceUtilities
             return false;
         }
 
-        private readonly HashSet<WebSocketServiceBase> AliveWSHandlers = new HashSet<WebSocketServiceBase>();
-        public void OnWebSocketServiceBaseDestroy(WebSocketServiceBase _WSHandler)
+        private readonly HashSet<WebAndWebSocketServiceBase> AliveWSHandlers = new HashSet<WebAndWebSocketServiceBase>();
+        internal void OnWebAndWebSocketServiceBaseDestroy(WebAndWebSocketServiceBase _WSHandler)
         {
             lock (AliveWSHandlers)
             {
@@ -285,16 +285,16 @@ namespace WebServiceUtilities
                                         }
                                         else if (WSContext != null)
                                         {
-                                            if (!(_Callback is WebSocketServiceBase))
+                                            if (!(_Callback is WebAndWebSocketServiceBase))
                                             {
                                                 WS.CloseAsync(WebSocketCloseStatus.InternalServerError, "An internal error has occurred.", CancellationToken.None).Wait();
-                                                _ServerLogAction?.Invoke($"WebService->Error: {Context.Request.RawUrl} supposed to be listened by a WebSocketServiceBase, but it is not.");
+                                                _ServerLogAction?.Invoke($"WebService->Error: {Context.Request.RawUrl} supposed to be listened by a WebAndWebSocketServiceBase, but it is not.");
                                                 return;
                                             }
 
                                             bTryDisposingWS = false;
 
-                                            var WSHandler = _Callback as WebSocketServiceBase;
+                                            var WSHandler = _Callback as WebAndWebSocketServiceBase;
                                             WSHandler.OnWebSocketRequest_Internal(WSContext, new WeakReference<WebService>(this), _ServerLogAction);
                                             lock (AliveWSHandlers)
                                             {
