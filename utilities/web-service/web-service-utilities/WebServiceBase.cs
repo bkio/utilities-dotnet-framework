@@ -69,6 +69,5 @@ namespace WebServiceUtilities
             return OnRequest(_Context, _ErrorMessageAction);
         }
         protected abstract WebServiceResponse OnRequest(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null);
-
     }
 }

@@ -30,19 +30,23 @@ namespace WebServiceUtilities
 
         private readonly Func<WebServiceBase> ListenerInitializer;
 
-        public WebPrefixStructure(string[] _Prefixes, Func<WebServiceBase> _ListenerInitializer)
+        private readonly WebSocketListenParameters WSListenParameters;
+
+        public WebPrefixStructure(string[] _Prefixes, Func<WebServiceBase> _ListenerInitializer, WebSocketListenParameters _WebSocketListenParameters = null)
         {
             if (_Prefixes != null && _Prefixes.Length > 0)
             {
                 Prefixes_SortedByLength = _Prefixes.OrderBy(x => x.Length).ToArray();
             }
             ListenerInitializer = _ListenerInitializer;
+            WSListenParameters = _WebSocketListenParameters;
         }
 
-        public bool GetCallbackFromRequest(out Func<WebServiceBase> _Initializer, out string _MatchedPrefix, HttpListenerContext _Context)
+        public bool GetCallbackFromRequest(out Func<WebServiceBase> _Initializer, out string _MatchedPrefix, out WebSocketListenParameters _WebSocketListenParameters, HttpListenerContext _Context)
         {
             _Initializer = null;
             _MatchedPrefix = null;
+            _WebSocketListenParameters = null;
 
             if (_Context == null || Prefixes_SortedByLength == null || Prefixes_SortedByLength.Length == 0 || ListenerInitializer == null)
             {
@@ -56,10 +60,26 @@ namespace WebServiceUtilities
                 {
                     _MatchedPrefix = Prefix;
                     _Initializer = ListenerInitializer;
+                    _WebSocketListenParameters = WSListenParameters;
                     return _Initializer != null;
                 }
             }
             return false;
         }
+
+        public class WebSocketListenParameters
+        {
+            public bool IsListenForWebSocketOnly()
+            {
+                return bListenForWebSocketOnly;
+            }
+            private readonly bool bListenForWebSocketOnly = false;
+
+            public WebSocketListenParameters(bool _bListenForWebSocketOnly)
+            {
+                bListenForWebSocketOnly = _bListenForWebSocketOnly;
+            }
+        }
+
     }
 }

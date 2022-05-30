@@ -2,10 +2,13 @@
 
 using System;
 using System.Net;
+using System.Net.WebSockets;
 using System.Threading;
 using System.Text;
 using System.Collections.Generic;
 using CommonUtilities;
+using static WebServiceUtilities.WebPrefixStructure;
+using System.Collections.Concurrent;
 
 namespace WebServiceUtilities
 {
@@ -58,21 +61,21 @@ namespace WebServiceUtilities
             PrefixesToListen = _PrefixesToListen;
         }
 
-        private bool LookForListenersFromRequest(out WebServiceBase _Callback, HttpListenerContext _Context)
+        private bool LookForListenersFromRequest(out WebServiceBase _Callback, out WebSocketListenParameters _WebSocketListenParameters, HttpListenerContext _Context)
         {
-            var LongestMatch = new KeyValuePair<string, Func<WebServiceBase>>(null, null);
+            var LongestMatch = new Tuple<string, Func<WebServiceBase>, WebSocketListenParameters>(null, null, null);
             int LongestLength = 0;
 
             foreach (var CurrentPrefixes in PrefixesToListen)
             {
                 if (CurrentPrefixes != null)
                 {
-                    if (CurrentPrefixes.GetCallbackFromRequest(out Func<WebServiceBase> _CallbackInitializer, out string _MatchedPrefix, _Context))
+                    if (CurrentPrefixes.GetCallbackFromRequest(out Func<WebServiceBase> _CallbackInitializer, out string _MatchedPrefix, out WebSocketListenParameters WSListenParameters, _Context))
                     {
                         if (_MatchedPrefix.Length > LongestLength)
                         {
                             LongestLength = _MatchedPrefix.Length;
-                            LongestMatch = new KeyValuePair<string, Func<WebServiceBase>>(_MatchedPrefix, _CallbackInitializer);
+                            LongestMatch = new Tuple<string, Func<WebServiceBase>, WebSocketListenParameters>(_MatchedPrefix, _CallbackInitializer, WSListenParameters);
                         }
                     }
                 }
@@ -80,13 +83,24 @@ namespace WebServiceUtilities
 
             if (LongestLength > 0)
             {
-                _Callback = LongestMatch.Value.Invoke();
-                _Callback.InitializeWebService(_Context, LongestMatch.Key);
+                _Callback = LongestMatch.Item2.Invoke();
+                _Callback.InitializeWebService(_Context, LongestMatch.Item1);
+                _WebSocketListenParameters = LongestMatch.Item3;
                 return true;
             }
 
             _Callback = null;
+            _WebSocketListenParameters = null;
             return false;
+        }
+
+        private readonly HashSet<WebSocketServiceBase> AliveWSHandlers = new HashSet<WebSocketServiceBase>();
+        public void OnWebSocketServiceBaseDestroy(WebSocketServiceBase _WSHandler)
+        {
+            lock (AliveWSHandlers)
+            {
+                AliveWSHandlers.Remove(_WSHandler);
+            }
         }
 
         public void Run(Action<string> _ServerLogAction = null)
@@ -218,7 +232,7 @@ namespace WebServiceUtilities
                                     WriteInternalError(Context.Response, "Code: WS-PTLN.");
                                     return;
                                 }
-                                if (!LookForListenersFromRequest(out WebServiceBase _Callback, Context))
+                                if (!LookForListenersFromRequest(out WebServiceBase _Callback, out WebSocketListenParameters _WSListenParameters, Context))
                                 {
                                     if (Context.Request.RawUrl.EndsWith("/ping"))
                                     {
@@ -229,6 +243,83 @@ namespace WebServiceUtilities
                                     WriteNotFound(Context.Response, "Request is not being listened.");
                                     return;
                                 }
+
+                                //WS part starts.
+
+                                WebSocket WS = null;
+                                bool bTryDisposingWS = true;
+
+                                try
+                                {
+                                    WebSocketContext WSContext = null;
+                                    if (Context.Request.IsWebSocketRequest)
+                                    {
+                                        try
+                                        {
+                                            // Calling `AcceptWebSocketAsync` on the `HttpListenerContext` will accept the WebSocket connection,
+                                            // sending the required 101 response to the client and return an instance of `WebSocketContext`.
+                                            // IMPORTANT!: So do not use Http Response write/alter functionality from here on!
+                                            var AcceptSocketTask = Context.AcceptWebSocketAsync(subProtocol: null);
+                                            AcceptSocketTask.Wait();
+                                            WSContext = AcceptSocketTask.Result;
+
+                                            WS = WSContext.WebSocket;
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            try
+                                            {
+                                                WriteInternalError(Context.Response, $"An internal error has occured during websocket accept: {e.Message}");
+                                            }
+                                            catch (Exception) { }
+
+                                            _ServerLogAction?.Invoke($"Exception in the request handle during websocket accept: {e.Message}, trace: {e.StackTrace}");
+                                            return;
+                                        }
+                                    }
+                                    if (_WSListenParameters != null)
+                                    {
+                                        if (_WSListenParameters.IsListenForWebSocketOnly() && WSContext == null)
+                                        {
+                                            WriteBadRequest(Context.Response, "Only websocket requests are accepted.");
+                                        }
+                                        else if (WSContext != null)
+                                        {
+                                            if (!(_Callback is WebSocketServiceBase))
+                                            {
+                                                WS.CloseAsync(WebSocketCloseStatus.InternalServerError, "An internal error has occurred.", CancellationToken.None).Wait();
+                                                _ServerLogAction?.Invoke($"WebService->Error: {Context.Request.RawUrl} supposed to be listened by a WebSocketServiceBase, but it is not.");
+                                                return;
+                                            }
+
+                                            bTryDisposingWS = false;
+
+                                            var WSHandler = _Callback as WebSocketServiceBase;
+                                            WSHandler.OnWebSocketRequest_Internal(WSContext, new WeakReference<WebService>(this), _ServerLogAction);
+                                            lock (AliveWSHandlers)
+                                            {
+                                                AliveWSHandlers.Add(WSHandler);
+                                            }
+                                        }
+                                        return;
+                                    }
+                                    else if (WSContext != null)
+                                    {
+                                        WS.CloseAsync(WebSocketCloseStatus.ProtocolError, "Only HTTP requests are accepted for this endpoint.", CancellationToken.None).Wait();
+                                        return;
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    _ServerLogAction?.Invoke($"Exception handled in the request handle during websocket process: {e.Message}, trace: {e.StackTrace}");
+                                    return; //"finally" block will be executed to dispose WS. (Tested)
+                                }
+                                finally
+                                {
+                                    if (bTryDisposingWS) try { WS?.Dispose(); } catch (Exception) { }
+                                }
+                                //WS part ends.
+                                //From now on it cannot be a WS request anymore.
 
                                 var Response = _Callback.ProcessRequest(Context, _ServerLogAction);
 
@@ -294,7 +385,7 @@ namespace WebServiceUtilities
                         }
                         finally
                         {
-                            //Always close the stream
+                            //Always close the streams
                             try { Context.Response.OutputStream.Close(); } catch (Exception) { }
                             try { Context.Response.OutputStream.Dispose(); } catch (Exception) { }
                             //try { Context.Response.Close(); } catch (Exception) { }
@@ -303,7 +394,18 @@ namespace WebServiceUtilities
                 }
             });
         }
-        
+
+        private static void WriteBadRequest(HttpListenerResponse _WriteTo, string _CustomMessage)
+        {
+            string Resp = WebResponse.Error_BadRequest_String(_CustomMessage);
+            byte[] Buff = Encoding.UTF8.GetBytes(Resp);
+
+            _WriteTo.ContentType = WebResponse.Error_BadRequest_ContentType;
+            _WriteTo.StatusCode = WebResponse.Error_BadRequest_Code;
+            _WriteTo.ContentLength64 = Buff.Length;
+            _WriteTo.OutputStream.Write(Buff, 0, Buff.Length);
+        }
+
         private static void WriteInternalError(HttpListenerResponse _WriteTo, string _CustomMessage)
         {
             string Resp = WebResponse.Error_InternalError_String(_CustomMessage);
