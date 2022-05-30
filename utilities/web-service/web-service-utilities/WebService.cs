@@ -94,15 +94,6 @@ namespace WebServiceUtilities
             return false;
         }
 
-        private readonly HashSet<WebAndWebSocketServiceBase> AliveWSHandlers = new HashSet<WebAndWebSocketServiceBase>();
-        internal void OnWebAndWebSocketServiceBaseDestroy(WebAndWebSocketServiceBase _WSHandler)
-        {
-            lock (AliveWSHandlers)
-            {
-                AliveWSHandlers.Remove(_WSHandler);
-            }
-        }
-
         public void Run(Action<string> _ServerLogAction = null)
         {
             var bStartSucceed = new Atomicable<bool>(false);
@@ -245,10 +236,7 @@ namespace WebServiceUtilities
                                 }
 
                                 //WS part starts.
-
                                 WebSocket WS = null;
-                                bool bTryDisposingWS = true;
-
                                 try
                                 {
                                     WebSocketContext WSContext = null;
@@ -282,6 +270,7 @@ namespace WebServiceUtilities
                                         if (_WSListenParameters.IsListenForWebSocketOnly() && WSContext == null)
                                         {
                                             WriteBadRequest(Context.Response, "Only websocket requests are accepted.");
+                                            return;
                                         }
                                         else if (WSContext != null)
                                         {
@@ -292,19 +281,9 @@ namespace WebServiceUtilities
                                                 return;
                                             }
 
-                                            bTryDisposingWS = false;
-
-                                            var WSHandler = _Callback as WebAndWebSocketServiceBase;
-                                            lock (AliveWSHandlers)
-                                            {
-                                                AliveWSHandlers.Add(WSHandler);
-                                            }
-                                            TaskWrapper.Run(() =>
-                                            {
-                                                WSHandler.OnWebSocketRequest_Internal(WSContext, new WeakReference<WebService>(this), _ServerLogAction);
-                                            });
+                                            (_Callback as WebAndWebSocketServiceBase).OnWebSocketRequest_Internal(WSContext, _ServerLogAction);
+                                            return;
                                         }
-                                        return;
                                     }
                                     else if (WSContext != null)
                                     {
@@ -315,11 +294,11 @@ namespace WebServiceUtilities
                                 catch (Exception e)
                                 {
                                     _ServerLogAction?.Invoke($"Exception handled in the request handle during websocket process: {e.Message}, trace: {e.StackTrace}");
-                                    return; //"finally" block will be executed to dispose WS. (Tested)
+                                    return;
                                 }
                                 finally
                                 {
-                                    if (bTryDisposingWS) try { WS?.Dispose(); } catch (Exception) { }
+                                    try { WS?.Dispose(); } catch (Exception) { }
                                 }
                                 //WS part ends.
                                 //From now on it cannot be a WS request anymore.
