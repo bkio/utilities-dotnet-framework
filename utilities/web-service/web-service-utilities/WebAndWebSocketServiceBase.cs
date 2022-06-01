@@ -21,9 +21,25 @@ namespace WebServiceUtilities
     {
         internal void OnWebSocketRequest_Internal(WebSocketContext _Context, Action<string> _ErrorMessageAction = null)
         {
+            WebSocketObject = new WeakReference<WebSocket>(_Context.WebSocket);
             OnWebSocketRequest(_Context, _ErrorMessageAction);
         }
 
         protected abstract void OnWebSocketRequest(WebSocketContext _Context, Action<string> _ErrorMessageAction = null);
+
+        public bool IsWebSocketOpen()
+        {
+            bool bResult = false;
+            try
+            {
+                if (WebSocketObject != null && WebSocketObject.TryGetTarget(out WebSocket _Socket))
+                {
+                    bResult = _Socket.State == WebSocketState.Open;
+                }
+            }
+            catch (Exception) { }
+            return bResult;
+        }
+        private WeakReference<WebSocket> WebSocketObject;
     }
 }
