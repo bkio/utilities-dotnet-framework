@@ -19,6 +19,12 @@ namespace WebServiceUtilities
      */
     public abstract class WebAndWebSocketServiceBase : WebServiceBase
     {
+        public bool IsOkToCancelProcessIfSocketClosed()
+        {
+            return bOkToCancelProcessIfSocketClosed;
+        }
+        protected bool bOkToCancelProcessIfSocketClosed = true;
+
         internal void OnWebSocketRequest_Internal(WebSocketContext _Context, Action<string> _ErrorMessageAction = null)
         {
             OnWebSocketRequest(_Context, _ErrorMessageAction);

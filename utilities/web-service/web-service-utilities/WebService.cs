@@ -285,7 +285,37 @@ namespace WebServiceUtilities
                                                 return;
                                             }
 
-                                            (_Callback as WebAndWebSocketServiceBase).OnWebSocketRequest_Internal(WSContext, _ServerLogAction);
+                                            // Cancel the process if user disconnects prematuraly - Starts
+                                            using var WSTask_CancelTokenSource = new CancellationTokenSource();
+                                            var bWSTaskCompleted = new Atomicable<bool>(false);
+
+                                            TaskWrapper.Run(() =>
+                                            {
+                                                (_Callback as WebAndWebSocketServiceBase).OnWebSocketRequest_Internal(WSContext, _ServerLogAction);
+
+                                                bWSTaskCompleted.Set(true);
+                                            },
+                                            WSTask_CancelTokenSource);
+                                            do
+                                            {
+                                                Thread.Sleep(250);
+
+                                                if (WS.State != WebSocketState.Open 
+                                                    && !bWSTaskCompleted.Get() 
+                                                    && (_Callback as WebAndWebSocketServiceBase).IsOkToCancelProcessIfSocketClosed())
+                                                {
+                                                    try
+                                                    {
+                                                        WSTask_CancelTokenSource.Cancel();
+                                                    }
+                                                    catch (Exception) { }
+
+                                                    return;
+                                                }
+
+                                            } while (!bWSTaskCompleted.Get());
+                                            // Cancel the process if user disconnects prematuraly - Ends
+
                                             return;
                                         }
                                     }
