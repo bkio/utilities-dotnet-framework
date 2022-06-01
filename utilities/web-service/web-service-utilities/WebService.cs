@@ -276,7 +276,7 @@ namespace WebServiceUtilities
                                         {
                                             if (!(_Callback is WebAndWebSocketServiceBase))
                                             {
-                                                using (var CloseTask = WS.CloseAsync(WebSocketCloseStatus.InternalServerError, "An internal error has occurred.", CancellationToken.None))
+                                                using (var CloseTask = WS.CloseOutputAsync(WebSocketCloseStatus.InternalServerError, "An internal error has occurred.", CancellationToken.None))
                                                 {
                                                     CloseTask.Wait();
                                                 }
@@ -291,7 +291,7 @@ namespace WebServiceUtilities
                                     }
                                     else if (WSContext != null)
                                     {
-                                        using (var CloseTask = WS.CloseAsync(WebSocketCloseStatus.ProtocolError, "Only HTTP requests are accepted for this endpoint.", CancellationToken.None))
+                                        using (var CloseTask = WS.CloseOutputAsync(WebSocketCloseStatus.ProtocolError, "Only HTTP requests are accepted for this endpoint.", CancellationToken.None))
                                         {
                                             CloseTask.Wait();
                                         }
@@ -305,6 +305,16 @@ namespace WebServiceUtilities
                                 }
                                 finally
                                 {
+                                    // In case its not closed.
+                                    try
+                                    {
+                                        using (var CloseTask = WS.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Connection closed.", CancellationToken.None))
+                                        {
+                                            CloseTask.Wait();
+                                        }
+                                    }
+                                    catch (Exception) { }
+
                                     try { WS?.Dispose(); } catch (Exception) { }
                                 }
                                 //WS part ends.
