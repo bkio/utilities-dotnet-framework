@@ -623,6 +623,36 @@ namespace CommonUtilities
 
         /// <summary>
         /// 
+        /// <para>Base64Encode:</para>
+        /// 
+        /// <para>Decodes Base64 String</para>
+        /// 
+        /// <para>Parameters:</para>
+        /// <para><paramref name="_Result"/>                        Base64-decoded string</para>
+        /// <para><paramref name="_Input"/>                         Input Parameter</para>
+        /// <para><paramref name="_ErrorMessageAction"/>            Error messages will be pushed to this action</para>
+        /// 
+        /// <returns> Returns:                                      Success or failure</returns>
+        /// 
+        /// </summary>
+        /// 
+        public static bool Base64Decode(out string _Result, string _Input, Action<string> _ErrorMessageAction = null)
+        {
+            try
+            {
+                _Result = Encoding.UTF8.GetString(Convert.FromBase64String(_Input));
+                return true;
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke(e.Message);
+            }
+            _Result = null;
+            return false;
+        }
+
+        /// <summary>
+        /// 
         /// <para>GetApplicationExePath:</para>
         /// 
         /// <para>Returns full path to this exe</para>

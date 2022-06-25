@@ -40,18 +40,23 @@ namespace CloudServiceUtilities.DatabaseServices
             {
                 string ApplicationCredentials = Environment.GetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS");
                 string ApplicationCredentialsPlain = Environment.GetEnvironmentVariable("GOOGLE_PLAIN_CREDENTIALS");
-                if (ApplicationCredentials == null && ApplicationCredentialsPlain == null)
+                string ApplicationCredentialsBase64 = Environment.GetEnvironmentVariable("GOOGLE_BASE64_CREDENTIALS");
+                if (ApplicationCredentials == null && ApplicationCredentialsPlain == null && ApplicationCredentialsBase64 == null)
                 {
-                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->Constructor: GOOGLE_APPLICATION_CREDENTIALS (or GOOGLE_PLAIN_CREDENTIALS) environment variable is not defined.");
+                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->Constructor: GOOGLE_APPLICATION_CREDENTIALS (or GOOGLE_PLAIN_CREDENTIALS or GOOGLE_BASE64_CREDENTIALS) environment variable is not defined.");
                     bInitializationSucceed = false;
                 }
                 else
                 {
                     if (ApplicationCredentials == null)
                     {
-                        if (!Utility.HexDecode(out ApplicationCredentialsPlain, ApplicationCredentialsPlain, _ErrorMessageAction))
+                        if (ApplicationCredentialsPlain != null && !Utility.HexDecode(out ApplicationCredentialsPlain, ApplicationCredentialsPlain, _ErrorMessageAction))
                         {
                             throw new Exception("Hex decode operation for application credentials plain has failed.");
+                        }
+                        else if (!Utility.Base64Decode(out ApplicationCredentialsPlain, ApplicationCredentialsBase64, _ErrorMessageAction))
+                        {
+                            throw new Exception("Base64 decode operation for application credentials plain has failed.");
                         }
                         Credential = GoogleCredential.FromJson(ApplicationCredentialsPlain)
                                          .CreateScoped(DatastoreClient.DefaultScopes)

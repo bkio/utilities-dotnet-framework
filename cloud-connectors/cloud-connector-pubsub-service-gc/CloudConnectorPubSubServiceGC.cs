@@ -9,7 +9,7 @@ namespace CloudConnectors
     /// 
     /// <para>Required Environment variables:</para>
     /// 
-    /// <para>GOOGLE_CLOUD_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS (or GOOGLE_PLAIN_CREDENTIALS) must be provided and valid.</para>
+    /// <para>GOOGLE_CLOUD_PROJECT_ID, GOOGLE_APPLICATION_CREDENTIALS (or GOOGLE_PLAIN_CREDENTIALS or GOOGLE_BASE64_CREDENTIALS) must be provided and valid.</para>
     /// 
     /// </summary>
     public static class CloudConnectorExtensions_PubSubService_GC
