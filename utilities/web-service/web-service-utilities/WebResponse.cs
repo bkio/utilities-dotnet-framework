@@ -145,6 +145,10 @@ namespace WebServiceUtilities
 
         //
 
+        public static WebServiceResponse Redirect(string _Url) { return WebServiceResponse.Redirect(_Url); }
+
+        //
+
         public static readonly string Error_BadRequest_ContentType = "application/json";
         public static string Error_BadRequest_String(string _Message) { return $"{{\"result\":\"failure\",\"message\":\"Bad Request. {_Message} \"}}"; }
         public static readonly int Error_BadRequest_Code = 400;
