@@ -547,7 +547,7 @@ namespace CloudServiceUtilities.FileServices
             out Dictionary<string, string> _Metadata,
             Action<string> _ErrorMessageAction = null)
         {
-            _Metadata = new Dictionary<string, string>();
+            _Metadata = null;
 
             if (GSClient == null)
             {
@@ -557,17 +557,39 @@ namespace CloudServiceUtilities.FileServices
 
             try
             {
-                var ResultObject = GSClient.GetObject(_BucketName, _KeyInBucket);
+                var ResultObject = GSClient.GetObject(_BucketName, _KeyInBucket, new GetObjectOptions() { Projection = Projection.Full });
                 if (ResultObject == null || ResultObject.Metadata == null)
                 {
                     _ErrorMessageAction?.Invoke("FileServiceGC->GetFileMetadata: GetObject Response or Metadata object is null.");
                     return false;
                 }
-
-                foreach (var CurrentMetadata in ResultObject.Metadata)
+                _Metadata = new Dictionary<string, string>()
                 {
-                    _Metadata.Add(CurrentMetadata.Key, CurrentMetadata.Value);
-                }
+                    ["Bucket"] = ResultObject.Bucket,
+                    ["CacheControl"] = ResultObject.CacheControl,
+                    ["ComponentCount"] = $"{ResultObject.ComponentCount ?? -1}",
+                    ["ContentDisposition"] = ResultObject.ContentDisposition,
+                    ["ContentEncoding"] = ResultObject.ContentEncoding,
+                    ["ContentLanguage"] = ResultObject.ContentLanguage,
+                    ["ContentType"] = ResultObject.ContentType,
+                    ["Crc32c"] = ResultObject.Crc32c,
+                    ["ETag"] = ResultObject.ETag,
+                    ["Generation"] = $"{ResultObject.Generation ?? -1}",
+                    ["Id"] = ResultObject.Id,
+                    ["Kind"] = ResultObject.Kind,
+                    ["KmsKeyName"] = ResultObject.KmsKeyName,
+                    ["Md5Hash"] = ResultObject.Md5Hash,
+                    ["MediaLink"] = ResultObject.MediaLink,
+                    ["Metageneration"] = $"{ResultObject.Metageneration ?? -1}",
+                    ["Name"] = ResultObject.Name,
+                    ["Size"] = $"{ResultObject.Size ?? 0}",
+                    ["StorageClass"] = ResultObject.StorageClass,
+                    ["TimeCreated"] = $"{(ResultObject.TimeCreated.HasValue ? ResultObject.TimeCreated.ToString() : "")}",
+                    ["Updated"] = $"{(ResultObject.Updated.HasValue ? ResultObject.Updated.ToString() : "")}",
+                    ["EventBasedHold"] = $"{ResultObject.EventBasedHold ?? false}",
+                    ["TemporaryHold"] = $"{ResultObject.TemporaryHold ?? false}",
+                    ["RetentionExpirationTime"] = $"{(ResultObject.RetentionExpirationTime.HasValue ? ResultObject.RetentionExpirationTime.ToString() : "")}",
+                };
             }
             catch (Exception e)
             {
