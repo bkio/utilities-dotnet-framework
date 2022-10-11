@@ -16,7 +16,7 @@ namespace WebServiceUtilities
         public readonly bool bRedirect;
         public readonly string URLIfRedirect;
 
-        public WebServiceResponse(int _StatusCode, Dictionary<string, IEnumerable<string>> _Headers, StringOrStream _ResponseContent, string _ResponseContentType = null)
+        public WebServiceResponse(int _StatusCode, Dictionary<string, IEnumerable<string>> _Headers, StringOrStream _ResponseContent = null, string _ResponseContentType = null)
         {
             StatusCode = _StatusCode;
 
@@ -53,7 +53,7 @@ namespace WebServiceUtilities
             return new WebServiceResponse(_Url, _Headers);
         }
 
-        public WebServiceResponse(int _StatusCode, StringOrStream _ResponseContent, string _ResponseContentType = null)
+        public WebServiceResponse(int _StatusCode, StringOrStream _ResponseContent = null, string _ResponseContentType = null)
         {
             StatusCode = _StatusCode;
 
