@@ -181,6 +181,25 @@ namespace CloudServiceUtilities
 
         /// <summary>
         ///
+        /// <para>GetFileMetadata:</para>
+        ///
+        /// <para>Gets the metadata of the file from the file service</para>
+        ///
+        /// <para>Parameters:</para>
+        /// <para><paramref name="_BucketName"/>                  Name of the Bucket to be used to store file in</para>
+        /// <para><paramref name="_KeyInBucket"/>                 Key to remote file relative to bucket</para>
+        /// <para><paramref name="_Metadata"/>                    File metadata</para>
+        /// <para><paramref name="_ErrorMessageAction"/>          Error messages will be pushed to this action</para>
+        ///
+        /// </summary>
+        bool GetFileMetadata(
+            string _BucketName,
+            string _KeyInBucket,
+            out Dictionary<string, string> _Metadata,
+            Action<string> _ErrorMessageAction = null);
+
+        /// <summary>
+        ///
         /// <para>GetFileTags:</para>
         ///
         /// <para>Gets the tags of the file from the file service</para>

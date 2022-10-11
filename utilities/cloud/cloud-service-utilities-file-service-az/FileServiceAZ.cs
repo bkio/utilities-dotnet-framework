@@ -520,6 +520,32 @@ namespace CloudServiceUtilities.FileServices
 
         /// <summary>
         ///
+        /// <para>GetFileMetadata:</para>
+        ///
+        /// <para>Gets the metadata of the file from the file service</para>
+        ///
+        /// <para>Check <seealso cref="IFileServiceInterface.GetFileMetadata"/> for detailed documentation</para>
+        ///
+        /// </summary>
+        public bool GetFileMetadata(
+            string _BucketName,
+            string _KeyInBucket,
+            out Dictionary<string, string> _Metadata,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _Metadata = new Dictionary<string, string>();
+
+            if (!GetFileTags(_BucketName, _KeyInBucket, out List<Tuple<string, string>> _SoCalledTags, _ErrorMessageAction))
+                return false;
+
+            foreach (var Current in _SoCalledTags)
+                _Metadata.Add(Current.Item1, Current.Item2);
+
+            return true;
+        }
+
+        /// <summary>
+        ///
         /// <para>HasInitializationSucceed:</para>
         /// 
         /// <para>Check <seealso cref="IFileServiceInterface.HasInitializationSucceed"/> for detailed documentation</para>

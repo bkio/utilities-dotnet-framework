@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Amazon.Runtime.Internal.Transform;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Transfer;
@@ -485,6 +486,64 @@ namespace CloudServiceUtilities.FileServices
                 _ErrorMessageAction?.Invoke($"FileServiceAWS->GetFileTags: {e.Message}, Trace: {e.StackTrace}");
                 return false;
             }
+            return true;
+        }
+
+        /// <summary>
+        ///
+        /// <para>GetFileMetadata:</para>
+        ///
+        /// <para>Gets the metadata of the file from the file service</para>
+        ///
+        /// <para>Check <seealso cref="IFileServiceInterface.GetFileMetadata"/> for detailed documentation</para>
+        ///
+        /// </summary>
+        public bool GetFileMetadata(
+            string _BucketName,
+            string _KeyInBucket,
+            out Dictionary<string, string> _Metadata,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _Metadata = new Dictionary<string, string>();
+
+            if (S3Client == null)
+            {
+                _ErrorMessageAction?.Invoke("FileServiceAWS->GetFileMetadata: S3Client is null.");
+                return false;
+            }
+
+            GetObjectMetadataRequest MetaRequest = new GetObjectMetadataRequest
+            {
+                BucketName = _BucketName,
+                Key = _KeyInBucket
+            };
+
+            try
+            {
+                using (var CreatedTask = S3Client.GetObjectMetadataAsync(MetaRequest))
+                {
+                    CreatedTask.Wait();
+
+                    var MetaResponse = CreatedTask.Result;
+
+                    if (MetaResponse == null || MetaResponse.Metadata == null)
+                    {
+                        _ErrorMessageAction?.Invoke("FileServiceAWS->GetFileMetadata: MetaResponse or MetaResponse.Metadata is null.");
+                        return false;
+                    }
+
+                    foreach (var CurrentMetaKey in MetaResponse.Metadata.Keys)
+                    {
+                        _Metadata.Add(CurrentMetaKey, MetaResponse.Metadata[CurrentMetaKey]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"FileServiceAWS->GetFileMetadata: {e.Message}, Trace: {e.StackTrace}");
+                return false;
+            }
+
             return true;
         }
 

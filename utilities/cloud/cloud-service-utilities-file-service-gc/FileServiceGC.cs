@@ -534,6 +534,51 @@ namespace CloudServiceUtilities.FileServices
 
         /// <summary>
         ///
+        /// <para>GetFileMetadata:</para>
+        ///
+        /// <para>Gets the metadata of the file from the file service</para>
+        ///
+        /// <para>Check <seealso cref="IFileServiceInterface.GetFileMetadata"/> for detailed documentation</para>
+        ///
+        /// </summary>
+        public bool GetFileMetadata(
+            string _BucketName,
+            string _KeyInBucket,
+            out Dictionary<string, string> _Metadata,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _Metadata = new Dictionary<string, string>();
+
+            if (GSClient == null)
+            {
+                _ErrorMessageAction?.Invoke("FileServiceGC->GetFileMetadata: GSClient is null.");
+                return false;
+            }
+
+            try
+            {
+                var ResultObject = GSClient.GetObject(_BucketName, _KeyInBucket);
+                if (ResultObject == null || ResultObject.Metadata == null)
+                {
+                    _ErrorMessageAction?.Invoke("FileServiceGC->GetFileMetadata: GetObject Response or Metadata object is null.");
+                    return false;
+                }
+
+                foreach (var CurrentMetadata in ResultObject.Metadata)
+                {
+                    _Metadata.Add(CurrentMetadata.Key, CurrentMetadata.Value);
+                }
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"FileServiceGC->GetFileMetadata: {e.Message}, Trace: {e.StackTrace}");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        ///
         /// <para>SetFileTags:</para>
         ///
         /// <para>Sets the tags of the file in the file service, existing tags for the file in the cloud will be deleted</para>
