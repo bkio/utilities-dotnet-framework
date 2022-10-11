@@ -8,6 +8,8 @@ namespace WebServiceUtilities
 {
     public struct WebServiceResponse
     {
+        public readonly bool bByPass;
+
         public readonly int StatusCode;
         public readonly Dictionary<string, IEnumerable<string>> Headers;
         public readonly StringOrStream ResponseContent;
@@ -34,6 +36,8 @@ namespace WebServiceUtilities
 
             bRedirect = false;
             URLIfRedirect = null;
+
+            bByPass = false;
         }
 
         private WebServiceResponse(string _RedirectUrl, Dictionary<string, IEnumerable<string>> _Headers)
@@ -47,10 +51,31 @@ namespace WebServiceUtilities
 
             bRedirect = true;
             URLIfRedirect = _RedirectUrl;
+
+            bByPass = false;
         }
         public static WebServiceResponse Redirect(string _Url, Dictionary<string, IEnumerable<string>> _Headers = null)
         {
             return new WebServiceResponse(_Url, _Headers);
+        }
+
+        public static WebServiceResponse ByPass()
+        {
+            return new WebServiceResponse(true);
+        }
+        private WebServiceResponse(bool RESERVED) //Bypass private constructor
+        {
+            StatusCode = -1;
+
+            Headers = null;
+
+            ResponseContent = null;
+            ResponseContentType = null;
+
+            bRedirect = false;
+            URLIfRedirect = null;
+
+            bByPass = true;
         }
 
         public WebServiceResponse(int _StatusCode, StringOrStream _ResponseContent = null, string _ResponseContentType = null)
@@ -64,6 +89,8 @@ namespace WebServiceUtilities
 
             bRedirect = false;
             URLIfRedirect = null;
+
+            bByPass = false;
         }
     }
 }

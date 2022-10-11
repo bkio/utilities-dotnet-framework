@@ -321,70 +321,72 @@ namespace WebServiceUtilities
                                 //From now on it cannot be a WS request anymore.
 
                                 var Response = _Callback.ProcessRequest(Context, _ServerLogAction);
-
-                                Context.Response.StatusCode = Response.StatusCode;
-
-                                foreach (var CurrentHeader in Response.Headers)
+                                if (!Response.bByPass)
                                 {
-                                    foreach (var Value in CurrentHeader.Value)
+                                    Context.Response.StatusCode = Response.StatusCode;
+
+                                    foreach (var CurrentHeader in Response.Headers)
                                     {
-                                        if (CurrentHeader.Key.ToLower() != "access-control-allow-origin")
+                                        foreach (var Value in CurrentHeader.Value)
                                         {
-                                            Context.Response.AppendHeader(CurrentHeader.Key, Value);
+                                            if (CurrentHeader.Key.ToLower() != "access-control-allow-origin")
+                                            {
+                                                Context.Response.AppendHeader(CurrentHeader.Key, Value);
+                                            }
                                         }
                                     }
-                                }
 
-                                if (Response.bRedirect)
-                                {
-                                    Context.Response.Redirect(Response.URLIfRedirect);
-                                }
-                                else
-                                {
-                                    if (Response.ResponseContent != null)
+                                    if (Response.bRedirect)
                                     {
-                                        if (Response.ResponseContentType != null)
-                                        {
-                                            Context.Response.ContentType = Response.ResponseContentType;
-                                        }
-
-                                        if (Response.ResponseContent.Type == EStringOrStreamEnum.String)
-                                        {
-                                            byte[] Buffer = Encoding.UTF8.GetBytes(Response.ResponseContent.String);
-                                            if (Buffer != null)
-                                            {
-                                                Context.Response.ContentLength64 = Buffer.Length;
-                                                if (Buffer.Length > 0)
-                                                {
-                                                    Context.Response.OutputStream.Write(Buffer, 0, Buffer.Length);
-                                                }
-                                            }
-                                            else
-                                            {
-                                                Context.Response.ContentLength64 = 0;
-                                            }
-                                        }
-                                        else if (Response.ResponseContent.Type == EStringOrStreamEnum.Stream)
-                                        {
-                                            if (Response.ResponseContent.Stream != Context.Response.OutputStream)
-                                            {
-                                                if (Response.ResponseContent.Stream != null && Response.ResponseContent.StreamLength > 0)
-                                                {
-                                                    Context.Response.ContentLength64 = Response.ResponseContent.StreamLength;
-                                                    Response.ResponseContent.Stream.CopyTo(Context.Response.OutputStream);
-                                                }
-                                                else
-                                                {
-                                                    _ServerLogAction?.Invoke($"WebService->Error: Response is stream, but stream object is {(Response.ResponseContent.Stream == null ? "null" : "valid")} and content length is {Response.ResponseContent.StreamLength}");
-                                                    WriteInternalError(Context.Response, "Code: WS-STRMINV.");
-                                                    return;
-                                                }
-                                            }
-                                        }
+                                        Context.Response.Redirect(Response.URLIfRedirect);
                                     }
                                     else
                                     {
-                                        Context.Response.ContentLength64 = 0;
+                                        if (Response.ResponseContent != null)
+                                        {
+                                            if (Response.ResponseContentType != null)
+                                            {
+                                                Context.Response.ContentType = Response.ResponseContentType;
+                                            }
+
+                                            if (Response.ResponseContent.Type == EStringOrStreamEnum.String)
+                                            {
+                                                byte[] Buffer = Encoding.UTF8.GetBytes(Response.ResponseContent.String);
+                                                if (Buffer != null)
+                                                {
+                                                    Context.Response.ContentLength64 = Buffer.Length;
+                                                    if (Buffer.Length > 0)
+                                                    {
+                                                        Context.Response.OutputStream.Write(Buffer, 0, Buffer.Length);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    Context.Response.ContentLength64 = 0;
+                                                }
+                                            }
+                                            else if (Response.ResponseContent.Type == EStringOrStreamEnum.Stream)
+                                            {
+                                                if (Response.ResponseContent.Stream != Context.Response.OutputStream)
+                                                {
+                                                    if (Response.ResponseContent.Stream != null && Response.ResponseContent.StreamLength > 0)
+                                                    {
+                                                        Context.Response.ContentLength64 = Response.ResponseContent.StreamLength;
+                                                        Response.ResponseContent.Stream.CopyTo(Context.Response.OutputStream);
+                                                    }
+                                                    else
+                                                    {
+                                                        _ServerLogAction?.Invoke($"WebService->Error: Response is stream, but stream object is {(Response.ResponseContent.Stream == null ? "null" : "valid")} and content length is {Response.ResponseContent.StreamLength}");
+                                                        WriteInternalError(Context.Response, "Code: WS-STRMINV.");
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            Context.Response.ContentLength64 = 0;
+                                        }
                                     }
                                 }
                             }
