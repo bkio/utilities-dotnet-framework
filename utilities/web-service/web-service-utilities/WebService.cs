@@ -364,18 +364,21 @@ namespace WebServiceUtilities
                                                 Context.Response.ContentLength64 = 0;
                                             }
                                         }
-                                        else
+                                        else if (Response.ResponseContent.Type == EStringOrStreamEnum.Stream)
                                         {
-                                            if (Response.ResponseContent.Stream != null && Response.ResponseContent.StreamLength > 0)
+                                            if (Response.ResponseContent.Stream != Context.Response.OutputStream)
                                             {
-                                                Context.Response.ContentLength64 = Response.ResponseContent.StreamLength;
-                                                Response.ResponseContent.Stream.CopyTo(Context.Response.OutputStream);
-                                            }
-                                            else
-                                            {
-                                                _ServerLogAction?.Invoke($"WebService->Error: Response is stream, but stream object is {(Response.ResponseContent.Stream == null ? "null" : "valid")} and content length is {Response.ResponseContent.StreamLength}");
-                                                WriteInternalError(Context.Response, "Code: WS-STRMINV.");
-                                                return;
+                                                if (Response.ResponseContent.Stream != null && Response.ResponseContent.StreamLength > 0)
+                                                {
+                                                    Context.Response.ContentLength64 = Response.ResponseContent.StreamLength;
+                                                    Response.ResponseContent.Stream.CopyTo(Context.Response.OutputStream);
+                                                }
+                                                else
+                                                {
+                                                    _ServerLogAction?.Invoke($"WebService->Error: Response is stream, but stream object is {(Response.ResponseContent.Stream == null ? "null" : "valid")} and content length is {Response.ResponseContent.StreamLength}");
+                                                    WriteInternalError(Context.Response, "Code: WS-STRMINV.");
+                                                    return;
+                                                }
                                             }
                                         }
                                     }
