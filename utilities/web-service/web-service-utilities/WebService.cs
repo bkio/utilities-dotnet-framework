@@ -221,7 +221,7 @@ namespace WebServiceUtilities
                             Headers_CORS ??= new CORSHeaders();
 
                             Context.Response.AppendHeader("Access-Control-Allow-Origin", Headers_CORS.AccessControlAllowOrigin);
-                            Context.Response.AppendHeader("Access-Control-Expose-Headers", Headers_CORS.AccessControlExposeHeaders);
+                            Context.Response.AppendHeader("Access-Control-Allow-Credentials", Headers_CORS.AccessControllAllowCredentials);
 
                             bool bIsWebhookRequest =
                                 WebUtilities.DoesContextContainHeader(out List<string> _, out string _, Context, "webhook-request-callback")
@@ -230,7 +230,6 @@ namespace WebServiceUtilities
                             if (Context.Request.HttpMethod == "OPTIONS" && !bIsWebhookRequest)
                             {
                                 Context.Response.AppendHeader("Access-Control-Allow-Headers", Headers_CORS.AccessControlAllowHeaders);
-                                Context.Response.AppendHeader("Access-Control-Allow-Credentials", Headers_CORS.AccessControllAllowCredentials);
                                 Context.Response.AppendHeader("Access-Control-Allow-Methods", Headers_CORS.AccessControlAllowMethods);
                                 Context.Response.AppendHeader("Access-Control-Max-Age", Headers_CORS.AccessControlMaxAge);
 

@@ -77,7 +77,6 @@ namespace WebServiceUtilities
         public class CORSHeaders
         {
             public string AccessControlAllowOrigin = "*";
-            public string AccessControlExposeHeaders = "*";
             public string AccessControlAllowHeaders = "*";
             public string AccessControllAllowCredentials = "true";
             public string AccessControlAllowMethods = "GET, POST, PUT, DELETE, PATCH";
