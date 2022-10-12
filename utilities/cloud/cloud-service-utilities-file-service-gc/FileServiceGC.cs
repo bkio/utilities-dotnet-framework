@@ -558,9 +558,9 @@ namespace CloudServiceUtilities.FileServices
             try
             {
                 var ResultObject = GSClient.GetObject(_BucketName, _KeyInBucket, new GetObjectOptions() { Projection = Projection.Full });
-                if (ResultObject == null || ResultObject.Metadata == null)
+                if (ResultObject == null)
                 {
-                    _ErrorMessageAction?.Invoke("FileServiceGC->GetFileMetadata: GetObject Response or Metadata object is null.");
+                    _ErrorMessageAction?.Invoke("FileServiceGC->GetFileMetadata: GetObject Response object is null.");
                     return false;
                 }
                 _Metadata = new Dictionary<string, string>()
