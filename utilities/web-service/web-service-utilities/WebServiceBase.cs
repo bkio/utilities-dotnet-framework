@@ -69,5 +69,19 @@ namespace WebServiceUtilities
             return OnRequest(_Context, _ErrorMessageAction);
         }
         protected abstract WebServiceResponse OnRequest(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null);
+
+        internal virtual CORSHeaders GetCORSHeaders()
+        {
+            return new CORSHeaders();
+        }
+        internal class CORSHeaders
+        {
+            public string AccessControlAllowOrigin = "*";
+            public string AccessControlExposeHeaders = "*";
+            public string AccessControlAllowHeaders = "*";
+            public string AccessControllAllowCredentials = "true";
+            public string AccessControlAllowMethods = "GET, POST, PUT, DELETE, PATCH";
+            public string AccessControlMaxAge = "-1";
+        }
     }
 }

@@ -8,6 +8,7 @@ using System.Text;
 using System.Collections.Generic;
 using CommonUtilities;
 using static WebServiceUtilities.WebPrefixStructure;
+using static WebServiceUtilities.WebServiceBase;
 
 namespace WebServiceUtilities
 {
@@ -198,42 +199,45 @@ namespace WebServiceUtilities
                         if (Context == null) return;
                         try
                         {
-                            Context.Response.AppendHeader("Access-Control-Allow-Origin", "*");
+                            if (PrefixesToListen == null)
+                            {
+                                _ServerLogAction?.Invoke("WebService->Run: PrefixesToListen is null.");
+                                WriteInternalError(Context.Response, "Code: WS-PTLN.");
+                                return;
+                            }
+                            if (!LookForListenersFromRequest(out WebServiceBase _Callback, out WebSocketListenParameters _WSListenParameters, Context))
+                            {
+                                if (Context.Request.RawUrl.EndsWith("/ping"))
+                                {
+                                    WriteOK(Context.Response, "pong");
+                                    return;
+                                }
+                                _ServerLogAction?.Invoke($"WebService->Run: Request is not being listened. Request: {Context.Request.RawUrl}");
+                                WriteNotFound(Context.Response, "Request is not being listened.");
+                                return;
+                            }
+
+                            var Headers_CORS = _Callback.GetCORSHeaders();
+                            Headers_CORS ??= new CORSHeaders();
+
+                            Context.Response.AppendHeader("Access-Control-Allow-Origin", Headers_CORS.AccessControlAllowOrigin);
+                            Context.Response.AppendHeader("Access-Control-Expose-Headers", Headers_CORS.AccessControlExposeHeaders);
 
                             bool bIsWebhookRequest =
                                 WebUtilities.DoesContextContainHeader(out List<string> _, out string _, Context, "webhook-request-callback")
                                 && WebUtilities.DoesContextContainHeader(out List<string> _, out string _, Context, "webhook-request-origin");
 
-                            Context.Response.AppendHeader("Access-Control-Expose-Headers", "*");
-                            
                             if (Context.Request.HttpMethod == "OPTIONS" && !bIsWebhookRequest)
                             {
-                                Context.Response.AppendHeader("Access-Control-Allow-Headers", "*");
-                                Context.Response.AppendHeader("Access-Control-Allow-Credentials", "true");
-                                Context.Response.AppendHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
-                                Context.Response.AppendHeader("Access-Control-Max-Age", "-1");
+                                Context.Response.AppendHeader("Access-Control-Allow-Headers", Headers_CORS.AccessControlAllowHeaders);
+                                Context.Response.AppendHeader("Access-Control-Allow-Credentials", Headers_CORS.AccessControllAllowCredentials);
+                                Context.Response.AppendHeader("Access-Control-Allow-Methods", Headers_CORS.AccessControlAllowMethods);
+                                Context.Response.AppendHeader("Access-Control-Max-Age", Headers_CORS.AccessControlMaxAge);
+
                                 Context.Response.StatusCode = WebResponse.Status_OK_Code;
                             }
                             else
                             {
-                                if (PrefixesToListen == null)
-                                {
-                                    _ServerLogAction?.Invoke("WebService->Run: PrefixesToListen is null.");
-                                    WriteInternalError(Context.Response, "Code: WS-PTLN.");
-                                    return;
-                                }
-                                if (!LookForListenersFromRequest(out WebServiceBase _Callback, out WebSocketListenParameters _WSListenParameters, Context))
-                                {
-                                    if (Context.Request.RawUrl.EndsWith("/ping"))
-                                    {
-                                        WriteOK(Context.Response, "pong");
-                                        return;
-                                    }
-                                    _ServerLogAction?.Invoke($"WebService->Run: Request is not being listened. Request: {Context.Request.RawUrl}");
-                                    WriteNotFound(Context.Response, "Request is not being listened.");
-                                    return;
-                                }
-
                                 //WS part starts.
                                 WebSocket WS = null;
                                 try
