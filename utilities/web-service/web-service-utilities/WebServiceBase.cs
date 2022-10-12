@@ -70,11 +70,11 @@ namespace WebServiceUtilities
         }
         protected abstract WebServiceResponse OnRequest(HttpListenerContext _Context, Action<string> _ErrorMessageAction = null);
 
-        internal virtual CORSHeaders GetCORSHeaders()
+        public virtual CORSHeaders GetCORSHeaders()
         {
             return new CORSHeaders();
         }
-        internal class CORSHeaders
+        public class CORSHeaders
         {
             public string AccessControlAllowOrigin = "*";
             public string AccessControlExposeHeaders = "*";
