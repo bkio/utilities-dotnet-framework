@@ -18,7 +18,8 @@ namespace WebServiceUtilities
             "cache-control", "connection",
             "accept", "accept-encoding", "accept-language", "host", "user-agent",
             "x-forwarded-for", "x-forwarded-proto", "x-cloud-trace-context", "forwarded",
-            "content-length", "content-type"
+            //"content-length", "content-type",
+            "transfer-encoding"
         };
 
         public static void InsertHeadersFromContextInto(HttpListenerContext _Context, Action<string, string> _CollectionAddFunction, string[] _ExcludeHeaderKeys = null)
@@ -167,8 +168,7 @@ namespace WebServiceUtilities
 
             try
             {
-                if (_Request.RequestMethod != "GET" /*&& _Request.RequestMethod != "DELETE"*/
-                    && _Request.Content != null && ((_Request.Content.Type == EStringOrStreamEnum.Stream && _Request.Content.Stream != null) || (_Request.Content.Type == EStringOrStreamEnum.String && _Request.Content.String != null && _Request.Content.String.Length > 0)))
+                if (_Request.Content != null && ((_Request.Content.Type == EStringOrStreamEnum.Stream && _Request.Content.Stream != null) || (_Request.Content.Type == EStringOrStreamEnum.String && _Request.Content.String != null && _Request.Content.String.Length > 0)))
                 {
                     Request.ContentType = _Request.ContentType;
 
@@ -260,29 +260,39 @@ namespace WebServiceUtilities
             bool _bKillProcessOnAddAccessTokenForServiceExecutionFailure = true,
             IEnumerable<string> _ExcludeHeaderKeysForRequest = null)
         {
-            using (var InputStream = _Context.Request.InputStream)
-            {
-                using (var RequestStream = InputStream)
-                {
-                    var Result = InterServicesRequest(new InterServicesRequestRequest()
-                    {
-                        DestinationServiceUrl = _FullEndpoint,
-                        RequestMethod = _Context.Request.HttpMethod,
-                        ContentType = _Context.Request.ContentType,
-                        Content = new StringOrStream(RequestStream, _Context.Request.ContentLength64),
-                        bWithAuthToken = _bWithAuthToken,
-                        UseContextHeaders = _Context,
-                        ExcludeHeaderKeysForRequest = _ExcludeHeaderKeysForRequest
-                    },
-                    _bKillProcessOnAddAccessTokenForServiceExecutionFailure,
-                    _ErrorMessageAction);
+            var HTTPMethod = _Context.Request.HttpMethod.ToUpper();
 
-                    return new WebServiceResponse(
-                        Result.ResponseCode,
-                        Result.ResponseHeaders,
-                        Result.Content,
-                        Result.ContentType);
+            var bHasBody = HTTPMethod != "GET" && HTTPMethod != "DELETE" && HTTPMethod != "HEAD" && HTTPMethod != "TRACE";
+
+            Stream InputStream = null;
+            try
+            {
+                var Parameters = new InterServicesRequestRequest()
+                {
+                    DestinationServiceUrl = _FullEndpoint,
+                    RequestMethod = _Context.Request.HttpMethod,
+                    bWithAuthToken = _bWithAuthToken,
+                    UseContextHeaders = _Context,
+                    ExcludeHeaderKeysForRequest = _ExcludeHeaderKeysForRequest
+                };
+                if (bHasBody)
+                {
+                    InputStream = _Context.Request.InputStream;
+                    Parameters.ContentType = _Context.Request.ContentType;
+                    Parameters.Content = new StringOrStream(InputStream, _Context.Request.ContentLength64);
                 }
+
+                var Result = InterServicesRequest(Parameters, _bKillProcessOnAddAccessTokenForServiceExecutionFailure, _ErrorMessageAction);
+
+                return new WebServiceResponse(
+                    Result.ResponseCode,
+                    Result.ResponseHeaders,
+                    Result.Content,
+                    Result.ContentType);
+            }
+            finally
+            {
+                try { InputStream?.Dispose(); } catch (Exception) { }
             }
         }
 
