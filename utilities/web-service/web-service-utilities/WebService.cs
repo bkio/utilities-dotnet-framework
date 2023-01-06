@@ -30,8 +30,16 @@ namespace WebServiceUtilities
             if (_PrefixesToListen == null || _PrefixesToListen.Length == 0)
                 throw new ArgumentException("PrefixesToListen");
 
-            Listener.TimeoutManager.IdleConnection = TimeSpan.FromMinutes(10);
-            Listener.TimeoutManager.HeaderWait = TimeSpan.FromMinutes(10);
+            try
+            {
+                Listener.TimeoutManager.IdleConnection = TimeSpan.FromMinutes(10);
+            }
+            catch (Exception) { }
+            try
+            {
+                Listener.TimeoutManager.HeaderWait = TimeSpan.FromMinutes(10);
+            }
+            catch (Exception) { }
 
             if (_OverrideServerNames == null)
             {
