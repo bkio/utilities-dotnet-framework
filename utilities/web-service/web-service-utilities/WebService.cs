@@ -105,8 +105,11 @@ namespace WebServiceUtilities
             return false;
         }
 
-        public void Run(Action<string> _ServerLogAction = null)
+        public void Run(Action<string> _ServerLogAction = null, WebServiceConfig _Config = null)
         {
+            if (_Config == null)
+                _Config = new WebServiceConfig();
+
             var bStartSucceed = new Atomicable<bool>(false);
             var WaitForFirstSuccess = new ManualResetEvent(false);
             TaskWrapper.Run(() =>
@@ -223,7 +226,10 @@ namespace WebServiceUtilities
                                     WriteOK(Context.Response, "pong");
                                     return;
                                 }
-                                _ServerLogAction?.Invoke($"WebService->Run: Request is not being listened. Request: {Context.Request.RawUrl}");
+                                if (_Config.bLogNotBeingListenedRequests)
+                                {
+                                    _ServerLogAction?.Invoke($"WebService->Run: Request is not being listened. Request: {Context.Request.RawUrl}");
+                                }
                                 WriteNotFound(Context.Response, "Request is not being listened.");
                                 return;
                             }
@@ -477,5 +483,10 @@ namespace WebServiceUtilities
                 try { Listener.Close(); } catch (Exception) { }
             }
         }
+    }
+
+    public class WebServiceConfig
+    {
+        public bool bLogNotBeingListenedRequests = true;
     }
 }
