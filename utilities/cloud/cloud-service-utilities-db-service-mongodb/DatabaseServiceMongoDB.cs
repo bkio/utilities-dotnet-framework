@@ -1,4 +1,5 @@
 ﻿/// Copyright 2022- Burak Kara, All rights reserved.
+/// 
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -374,9 +375,10 @@ namespace CloudServiceUtilities.DatabaseServices
                     if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotExist)
                     {
                         //This actually is a "AttributeExist"; therefore we must check if there is no value returning with the condition.
-                        var ConditionFilter = Builders<BsonDocument>.Filter.And((Filter, _ConditionExpression as DatabaseAttributeConditionMongo).Filter);
+                        var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                        var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
 
-                        if (Exists(Table, ConditionFilter)) //Because it is AttributeExist (intentionally, see the implementation at the bottom)
+                        if (Exists(Table, FinalFilter)) //Because it is AttributeExist (intentionally, see the implementation at the bottom)
                         {
                             //Condition failed.
                             return false;
@@ -384,9 +386,10 @@ namespace CloudServiceUtilities.DatabaseServices
                     }
                     else
                     {
-                        var ConditionFilter = Builders<BsonDocument>.Filter.And((Filter, _ConditionExpression as DatabaseAttributeConditionMongo).Filter);
+                        var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                        var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
 
-                        if (!Exists(Table, ConditionFilter))
+                        if (!Exists(Table, FinalFilter))
                         {
                             //Condition failed.
                             return false;
@@ -525,9 +528,10 @@ namespace CloudServiceUtilities.DatabaseServices
                     {
                         //This actually is a "ArrayElementExist"; therefore we must check if there is no value returning with the condition.
 
-                        var ConditionFilter = Builders<BsonDocument>.Filter.And(Filter, (_ConditionExpression as BAttributeArrayElementNotExistConditionMongoDb).GetArrayElementFilter(_ElementName));
+                        var FirstCondition = (_ConditionExpression as BAttributeArrayElementNotExistConditionMongoDb).GetArrayElementFilter(_ElementName);
+                        var FinalCondition = Builders<BsonDocument>.Filter.And(Filter, FirstCondition);
                         
-                        if (Exists(Table, ConditionFilter)) //Because it is ArrayElementExist (intentionally, see the implementation at the bottom)
+                        if (Exists(Table, FinalCondition)) //Because it is ArrayElementExist (intentionally, see the implementation at the bottom)
                         {
                             //Condition failed.
                             return false;
@@ -713,7 +717,7 @@ namespace CloudServiceUtilities.DatabaseServices
             var Filter = Builders<BsonDocument>
                 .Filter.Eq(_KeyName, _KeyValue.ToString());
 
-            UpdateDefinition<BsonDocument> Update = null;
+            UpdateDefinition<BsonDocument> Update;
 
             if (_bDecrement)
             {
@@ -826,9 +830,7 @@ namespace CloudServiceUtilities.DatabaseServices
             public FilterDefinition<BsonDocument> Filter;
             public DatabaseAttributeConditionMongo(EDatabaseAttributeConditionType _ConditionType) : base(_ConditionType)
             {
-
             }
-
         }
 
         private class BAttributeArrayElementNotExistConditionMongoDb : DatabaseAttributeConditionMongo
