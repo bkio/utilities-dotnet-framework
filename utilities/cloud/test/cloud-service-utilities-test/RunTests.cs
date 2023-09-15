@@ -90,9 +90,9 @@ namespace CloudServiceUtilitiesTest
                 },
                 Console.WriteLine)) return false;
 
-            /*
-             * Logging Services tests
-             */
+            ///
+            /// Logging Services tests
+            ///
             var LoggingTests_GC = new LogServiceTest(
                 new LogServiceGC(
                     RequiredEnvVars["GC_PROJECT_ID"],
@@ -116,9 +116,9 @@ namespace CloudServiceUtilitiesTest
                 Console.WriteLine);
             if (!LoggingTests_Azure.Start()) return false;
 
-            /*
-             * E-mail Services tests
-             */
+            ///
+            /// E-Mail Services tests
+            ///
             var Comparator = new RelativeTestsResultComparator(Console.WriteLine);
 
             var MailTests_SendGrid = new EmailServicesTest(
@@ -130,9 +130,9 @@ namespace CloudServiceUtilitiesTest
                 Comparator.AddLine);
             if (!MailTests_SendGrid.Start()) return false;
 
-            /*
-             * Database Services tests
-             */
+            ///
+            /// DB Services tests
+            ///
             Comparator = new RelativeTestsResultComparator(Console.WriteLine);
 
             var DBTests_GC = new DatabaseServicesTest(
@@ -171,9 +171,9 @@ namespace CloudServiceUtilitiesTest
 
             if (!Comparator.Compare()) return false;
 
-            /*
-             * Memory and Pub/Sub Services tests
-             */
+            ///
+            /// Memory and PubSub Services tests
+            ///
             Comparator = new RelativeTestsResultComparator(Console.WriteLine);
 
             var MemTests_WithRedisPubSub = new MemoryPubSubServiceTest(
@@ -256,9 +256,9 @@ namespace CloudServiceUtilitiesTest
 
             if (!Comparator.Compare()) return false;
 
-            /*
-             * File Services tests
-             */
+            ///
+            /// File Services tests
+            ///
             Comparator = new RelativeTestsResultComparator(Console.WriteLine);
 
             var FSTests_GC = new FileServiceTest(

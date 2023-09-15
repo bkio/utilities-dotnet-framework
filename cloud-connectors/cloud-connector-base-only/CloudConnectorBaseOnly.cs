@@ -13,6 +13,7 @@ using CommonUtilities;
 [assembly: InternalsVisibleTo("CloudConnector_FileService_AWS")]
 [assembly: InternalsVisibleTo("CloudConnector_FileService_AZ")]
 [assembly: InternalsVisibleTo("CloudConnector_FileService_GC")]
+[assembly: InternalsVisibleTo("CloudConnector_FileService_MinIO")]
 [assembly: InternalsVisibleTo("CloudConnector_LogService_AWS")]
 [assembly: InternalsVisibleTo("CloudConnector_LogService_AZ")]
 [assembly: InternalsVisibleTo("CloudConnector_LogService_GC")]

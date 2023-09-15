@@ -57,6 +57,48 @@ namespace CloudServiceUtilities.FileServices
             }
         }
 
+        /// <summary>
+        /// For MinIO like custom object storage solutions that are S3 compatible.
+        /// </summary>
+        /// <param name="_ServerAddress"></param>
+        /// <param name="_AccessKey"></param>
+        /// <param name="_SecretKey"></param>
+        /// <param name="_Region"></param>
+        /// <param name="_ErrorMessageAction"></param>
+        public FileServiceAWS(
+            string _ServerAddress,
+            string _AccessKey,
+            string _SecretKey,
+            string _Region,
+            Action<string> _ErrorMessageAction = null)
+        {
+            try
+            {
+                var ClientConfig = new AmazonS3Config
+                {
+                    AuthenticationRegion = _Region,
+                    ServiceURL = _ServerAddress,
+                    ForcePathStyle = true
+                };
+
+                S3Client = new AmazonS3Client(_AccessKey, _SecretKey, ClientConfig);
+
+                TransferUtilityConfig TransferUtilConfig = new TransferUtilityConfig
+                {
+                    ConcurrentServiceRequests = 10,
+                };
+                TransferUtil = new TransferUtility(S3Client, TransferUtilConfig);
+
+                bInitializationSucceed = true;
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"FileServiceAWS->Constructor: {e.Message}, Trace: {e.StackTrace}");
+
+                bInitializationSucceed = false;
+            }
+        }
+
         ~FileServiceAWS()
         {
             S3Client?.Dispose();
