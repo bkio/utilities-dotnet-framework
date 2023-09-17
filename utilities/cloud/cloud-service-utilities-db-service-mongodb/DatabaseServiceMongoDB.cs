@@ -512,20 +512,11 @@ namespace CloudServiceUtilities.DatabaseServices
             {
                 if (_ConditionExpression != null)
                 {
-                    if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist
-                        || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
+                    var FirstCondition = (_ConditionExpression as AttributeArrayElementNotExistConditionMongoDb).GetArrayElementFilter();
+                    var FinalCondition = Builders<BsonDocument>.Filter.And(Filter, FirstCondition);
+
+                    if (!HasTableMatchingResultWithFilter(Table, FinalCondition))
                     {
-                        var FirstCondition = (_ConditionExpression as AttributeArrayElementNotExistConditionMongoDb).GetArrayElementFilter(_ElementName);
-                        var FinalCondition = Builders<BsonDocument>.Filter.And(Filter, FirstCondition);
-                        
-                        if (!HasTableMatchingResultWithFilter(Table, FinalCondition))
-                        {
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        _ErrorMessageAction?.Invoke("DatabaseServiceMongoDB->AddElementsToArrayItem: Condition is not valid for this operation.");
                         return false;
                     }
                 }
@@ -902,72 +893,74 @@ namespace CloudServiceUtilities.DatabaseServices
 
         private class AttributeArrayElementExistConditionMongoDb : DatabaseAttributeConditionMongo
         {
+            private readonly string Attribute;
             private readonly PrimitiveType ArrayElement;
-            public AttributeArrayElementExistConditionMongoDb(PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
+            public AttributeArrayElementExistConditionMongoDb(string _Attribute, PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
             {
+                Attribute = _Attribute;
                 ArrayElement = _ArrayElement;
             }
 
-            public FilterDefinition<BsonDocument> GetArrayElementFilter(string ArrName)
+            public FilterDefinition<BsonDocument> GetArrayElementFilter()
             {
                 switch (ArrayElement.Type)
                 {
                     case EPrimitiveTypeEnum.Double:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new double[] { ArrayElement.AsDouble });
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(Attribute, new double[] { ArrayElement.AsDouble });
                         break;
                     case EPrimitiveTypeEnum.Integer:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new long[] { ArrayElement.AsInteger });
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(Attribute, new long[] { ArrayElement.AsInteger });
                         break;
                     case EPrimitiveTypeEnum.ByteArray:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new byte[][] { ArrayElement.AsByteArray });
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(Attribute, new byte[][] { ArrayElement.AsByteArray });
                         break;
                     case EPrimitiveTypeEnum.String:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new string[] { ArrayElement.AsString });
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(Attribute, new string[] { ArrayElement.AsString });
                         break;
                 }
                 return Filter;
             }
         }
 
-        public DatabaseAttributeCondition BuildArrayElementExistCondition(PrimitiveType ArrayElement)
+        public DatabaseAttributeCondition BuildArrayElementExistCondition(string _Attribute, PrimitiveType ArrayElement)
         {
-
-            return new AttributeArrayElementExistConditionMongoDb(ArrayElement);
+            return new AttributeArrayElementExistConditionMongoDb(_Attribute, ArrayElement);
         }
 
         private class AttributeArrayElementNotExistConditionMongoDb : DatabaseAttributeConditionMongo
         {
+            private readonly string Attribute;
             private readonly PrimitiveType ArrayElement;
-            public AttributeArrayElementNotExistConditionMongoDb(PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
+            public AttributeArrayElementNotExistConditionMongoDb(string _Attribute, PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
             {
+                Attribute = _Attribute;
                 ArrayElement = _ArrayElement;
             }
 
-            public FilterDefinition<BsonDocument> GetArrayElementFilter(string ArrName)
+            public FilterDefinition<BsonDocument> GetArrayElementFilter()
             {
                 switch (ArrayElement.Type)
                 {
                     case EPrimitiveTypeEnum.Double:
-                        Filter = Builders<BsonDocument>.Filter.AnyNin(ArrName, new double[] { ArrayElement.AsDouble });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(Attribute, new double[] { ArrayElement.AsDouble });
                         break;
                     case EPrimitiveTypeEnum.Integer:
-                        Filter = Builders<BsonDocument>.Filter.AnyNin(ArrName, new long[] { ArrayElement.AsInteger });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(Attribute, new long[] { ArrayElement.AsInteger });
                         break;
                     case EPrimitiveTypeEnum.ByteArray:
-                        Filter = Builders<BsonDocument>.Filter.AnyNin(ArrName, new byte[][] { ArrayElement.AsByteArray });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(Attribute, new byte[][] { ArrayElement.AsByteArray });
                         break;
                     case EPrimitiveTypeEnum.String:
-                        Filter = Builders<BsonDocument>.Filter.AnyNin(ArrName, new string[] { ArrayElement.AsString });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(Attribute, new string[] { ArrayElement.AsString });
                         break;
                 }
                 return Filter;
             }
         }
 
-        public DatabaseAttributeCondition BuildArrayElementNotExistCondition(PrimitiveType ArrayElement)
+        public DatabaseAttributeCondition BuildArrayElementNotExistCondition(string _Attribute, PrimitiveType ArrayElement)
         {
-
-            return new AttributeArrayElementNotExistConditionMongoDb(ArrayElement);
+            return new AttributeArrayElementNotExistConditionMongoDb(_Attribute, ArrayElement);
         }
 
         private class AttributeEqualsConditionMongoDb : DatabaseAttributeConditionMongo

@@ -93,16 +93,16 @@ namespace CloudServiceUtilities
         /// </summary>
         bool HasInitializationSucceed();
 
+        DatabaseAttributeCondition BuildAttributeExistsCondition(string Attribute);
+        DatabaseAttributeCondition BuildAttributeNotExistCondition(string Attribute);
         DatabaseAttributeCondition BuildAttributeEqualsCondition(string Attribute, PrimitiveType Value);
         DatabaseAttributeCondition BuildAttributeNotEqualsCondition(string Attribute, PrimitiveType Value);
         DatabaseAttributeCondition BuildAttributeGreaterCondition(string Attribute, PrimitiveType Value);
         DatabaseAttributeCondition BuildAttributeGreaterOrEqualCondition(string Attribute, PrimitiveType Value);
         DatabaseAttributeCondition BuildAttributeLessCondition(string Attribute, PrimitiveType Value);
         DatabaseAttributeCondition BuildAttributeLessOrEqualCondition(string Attribute, PrimitiveType Value);
-        DatabaseAttributeCondition BuildAttributeExistsCondition(string Attribute);
-        DatabaseAttributeCondition BuildAttributeNotExistCondition(string Attribute);
-        DatabaseAttributeCondition BuildArrayElementExistCondition(PrimitiveType ArrayElement);
-        DatabaseAttributeCondition BuildArrayElementNotExistCondition(PrimitiveType ArrayElement);
+        DatabaseAttributeCondition BuildArrayElementExistCondition(string Attribute, PrimitiveType ArrayElement);
+        DatabaseAttributeCondition BuildArrayElementNotExistCondition(string Attribute, PrimitiveType ArrayElement);
 
         /// <summary>
         /// 

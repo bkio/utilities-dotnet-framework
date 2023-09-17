@@ -357,36 +357,7 @@ namespace CloudServiceUtilities.DatabaseServices
                     }
 
                     //Set condition expression
-                    if (_ConditionExpression != null)
-                    {
-                        var BuiltCondition = _ConditionExpression.GetBuiltCondition();
-                        if (BuiltCondition != null)
-                        {
-                            Expression ConditionalExpression = new Expression
-                            {
-                                ExpressionStatement = BuiltCondition.Item1
-                            };
-                            if (BuiltCondition.Item2 != null)
-                            {
-                                switch (BuiltCondition.Item2.Item2.Type)
-                                {
-                                    case EPrimitiveTypeEnum.String:
-                                        ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsString;
-                                        break;
-                                    case EPrimitiveTypeEnum.Integer:
-                                        ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsInteger;
-                                        break;
-                                    case EPrimitiveTypeEnum.Double:
-                                        ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsDouble;
-                                        break;
-                                    case EPrimitiveTypeEnum.ByteArray:
-                                        ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.ToString();
-                                        break;
-                                }
-                            }
-                            Config.ConditionalExpression = ConditionalExpression;
-                        }
-                    }
+                    Config.ConditionalExpression = BuildConditionalExpression(_ConditionExpression);
 
                     //Put item to the table
                     try
@@ -681,44 +652,8 @@ namespace CloudServiceUtilities.DatabaseServices
                 Request.ExpressionAttributeValues.Add(":vals", new AttributeValue { SS = SetAsList });
             }
 
-            if (_ConditionExpression != null)
-            {
-                if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist
-                    || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
-                {
-                    var BuiltCondition = _ConditionExpression.GetBuiltCondition();
-
-                    if (BuiltCondition.Item1 == null || BuiltCondition.Item2 == null || BuiltCondition.Item2.Item2 == null)
-                    {
-                        _ErrorMessageAction?.Invoke("DatabaseServiceAWS->AddElementsToArrayItem: Invalid condition expression.");
-                        return false;
-                    }
-                    
-                    if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.Integer)
-                    {
-                        Request.ExpressionAttributeValues.Add(BuiltCondition.Item2.Item1, new AttributeValue { NS = new List<string>() { BuiltCondition.Item2.Item2.AsInteger.ToString() } });
-                    }
-                    else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.Double)
-                    {
-                        Request.ExpressionAttributeValues.Add(BuiltCondition.Item2.Item1, new AttributeValue { NS = new List<string>() { BuiltCondition.Item2.Item2.AsDouble.ToString() } });
-                    }
-                    else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.String)
-                    {
-                        Request.ExpressionAttributeValues.Add(BuiltCondition.Item2.Item1, new AttributeValue { SS = new List<string>() { BuiltCondition.Item2.Item2.AsString } });
-                    }
-                    else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.ByteArray)
-                    {
-                        Request.ExpressionAttributeValues.Add(BuiltCondition.Item2.Item1, new AttributeValue { SS = new List<string>() { BuiltCondition.Item2.Item2.ToString() } });
-                    }
-
-                    Request.ConditionExpression = BuiltCondition.Item1.Replace("$ARRAY_NAME$", _ElementName);
-                }
-                else
-                {
-                    _ErrorMessageAction?.Invoke("DatabaseServiceAWS->AddElementsToArrayItem: Condition is not valid for this operation.");
-                    return false;
-                }
-            }
+            if (BuildConditionalExpression(_ConditionExpression, Request.ExpressionAttributeValues, out string FinalConditionExpression))
+                Request.ConditionExpression = FinalConditionExpression;
 
             //Update item in the table
             try
@@ -1214,6 +1149,8 @@ namespace CloudServiceUtilities.DatabaseServices
         
         private Expression BuildConditionalExpression(DatabaseAttributeCondition _ConditionExpression)
         {
+            if (_ConditionExpression == null) return null;
+
             var BuiltCondition = _ConditionExpression.GetBuiltCondition();
             if (BuiltCondition != null)
             {
@@ -1242,6 +1179,35 @@ namespace CloudServiceUtilities.DatabaseServices
                 return ConditionalExpression;
             }
             return null;
+        }
+        private bool BuildConditionalExpression(DatabaseAttributeCondition _ConditionExpression, Dictionary<string, AttributeValue> _ExpressionAttributeValues, out string _FinalConditionExpression)
+        {
+            _FinalConditionExpression = null;
+            if (_ConditionExpression == null) return false;
+
+            var BuiltCondition = _ConditionExpression.GetBuiltCondition();
+
+            if (BuiltCondition.Item2 != null)
+            {
+                if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.Integer)
+                {
+                    _ExpressionAttributeValues.Add(BuiltCondition.Item2.Item1, new AttributeValue { NS = new List<string>() { BuiltCondition.Item2.Item2.AsInteger.ToString() } });
+                }
+                else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.Double)
+                {
+                    _ExpressionAttributeValues.Add(BuiltCondition.Item2.Item1, new AttributeValue { NS = new List<string>() { BuiltCondition.Item2.Item2.AsDouble.ToString() } });
+                }
+                else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.String)
+                {
+                    _ExpressionAttributeValues.Add(BuiltCondition.Item2.Item1, new AttributeValue { SS = new List<string>() { BuiltCondition.Item2.Item2.AsString } });
+                }
+                else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.ByteArray)
+                {
+                    _ExpressionAttributeValues.Add(BuiltCondition.Item2.Item1, new AttributeValue { SS = new List<string>() { BuiltCondition.Item2.Item2.ToString() } });
+                }
+            }
+            _FinalConditionExpression = BuiltCondition.Item1;
+            return true;
         }
 
         private class AttributeEqualsConditionDynamodb : DatabaseAttributeCondition
@@ -1366,34 +1332,34 @@ namespace CloudServiceUtilities.DatabaseServices
 
         private class ArrayElementExistConditionDynamodb : DatabaseAttributeCondition
         {
-            public ArrayElementExistConditionDynamodb(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
+            public ArrayElementExistConditionDynamodb(string Attribute, PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
-                    "CONTAINS $ARRAY_NAME$ :cond_val",
+                    $"CONTAINS {Attribute} :cond_val",
                     new Tuple<string, PrimitiveType>(":cond_val", ArrayElement)
                 );
             }
         }
-        public DatabaseAttributeCondition BuildArrayElementExistCondition(PrimitiveType ArrayElement)
+        public DatabaseAttributeCondition BuildArrayElementExistCondition(string Attribute, PrimitiveType ArrayElement)
         {
-            return new ArrayElementExistConditionDynamodb(ArrayElement);
+            return new ArrayElementExistConditionDynamodb(Attribute, ArrayElement);
         }
 
         private class ArrayElementNotExistConditionDynamodb : DatabaseAttributeCondition
         {
-            public ArrayElementNotExistConditionDynamodb(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
+            public ArrayElementNotExistConditionDynamodb(string Attribute, PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
-                    "NOT CONTAINS $ARRAY_NAME$ :cond_val",
+                    $"NOT CONTAINS {Attribute} :cond_val",
                     new Tuple<string, PrimitiveType>(":cond_val", ArrayElement)
                 );
             }
         }
-        public DatabaseAttributeCondition BuildArrayElementNotExistCondition(PrimitiveType ArrayElement)
+        public DatabaseAttributeCondition BuildArrayElementNotExistCondition(string Attribute, PrimitiveType ArrayElement)
         {
-            return new ArrayElementNotExistConditionDynamodb(ArrayElement);
+            return new ArrayElementNotExistConditionDynamodb(Attribute, ArrayElement);
         }
     }
 }

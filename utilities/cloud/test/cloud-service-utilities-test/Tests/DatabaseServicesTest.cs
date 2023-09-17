@@ -164,7 +164,7 @@ namespace CloudServiceUtilitiesTest.Tests
                 },
                 out ReturnValue,
                 EReturnItemBehaviour.ReturnAllOld,
-                SelectedDBService.BuildArrayElementNotExistCondition(new PrimitiveType("test_value_1")),
+                SelectedDBService.BuildArrayElementNotExistCondition("test_list", new PrimitiveType("test_value_1")),
                 (string Message) =>
                 {
                     PrintAction?.Invoke($"Step {_TestStepNo}->TestAddToList->Error-> { Message}");

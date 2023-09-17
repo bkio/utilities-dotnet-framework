@@ -692,48 +692,9 @@ namespace CloudServiceUtilities.DatabaseServices
                             ItemAsArray = (JArray)ReturnedPreOperationObject[_ElementName];
                         }
 
-                        if (_ConditionExpression != null)
+                        if (!ConditionCheck(ReturnedPreOperationObject, _KeyName, _ConditionExpression, _ErrorMessageAction))
                         {
-                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist
-                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
-                            {
-                                var BuiltCondition = _ConditionExpression.GetBuiltCondition();
-
-                                if (BuiltCondition.Item2 == null || BuiltCondition.Item2.Item2 == null)
-                                {
-                                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->AddElementsToArrayItem: Invalid condition expression.");
-                                    return false;
-                                }
-
-                                if (ItemAsArray != null)
-                                {
-                                    if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist)
-                                    {
-                                        var bFound = false;
-                                        foreach (var CurTok in ItemAsArray)
-                                        {
-                                            if (CompareJTokenWithPrimitive(CurTok, BuiltCondition.Item2.Item2))
-                                            {
-                                                bFound = true;
-                                                break;
-                                            }
-                                        }
-                                        if (!bFound)
-                                            return false;
-                                    }
-                                    else
-                                    {
-                                        foreach (var CurTok in ItemAsArray)
-                                            if (CompareJTokenWithPrimitive(CurTok, BuiltCondition.Item2.Item2))
-                                                return false;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                _ErrorMessageAction?.Invoke("DatabaseServiceGC->AddElementsToArrayItem: Condition is not valid for this operation.");
-                                return false;
-                            }
+                            return false;
                         }
 
                         if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld)
@@ -1259,20 +1220,45 @@ namespace CloudServiceUtilities.DatabaseServices
             DatabaseAttributeCondition _ConditionExpression,
             Action<string> _ErrorMessageAction = null)
         {
+            if (_ConditionExpression == null) return true;
+
             var BuiltCondition = _ConditionExpression.GetBuiltCondition();
-            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals
-                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals
-                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreater
-                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreaterOrEqual
-                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLess
-                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLessOrEqual)
+
+            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeExists
+                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotExist)
             {
-                if (BuiltCondition.Item1 == null || BuiltCondition.Item2 == null || BuiltCondition.Item2.Item1 == null || BuiltCondition.Item2.Item2 == null)
+                bool bConditionSatisfied = false;
+
+                if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotExist)
                 {
-                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->ConditionCheck: Invalid condition expression.");
-                    return false;
+                    bConditionSatisfied = true;
+
+                    if (_JObjectToCheck != null)
+                    {
+                        if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
+                        {
+                            bConditionSatisfied = false;
+                        }
+                    }
+                }
+                else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeExists)
+                {
+                    if (_JObjectToCheck != null)
+                    {
+                        if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
+                        {
+                            bConditionSatisfied = true;
+                        }
+                    }
                 }
 
+                if (!bConditionSatisfied)
+                {
+                    return false;
+                }
+            }
+            else
+            {
                 bool bConditionSatisfied = false;
                 if (_JObjectToCheck != null && _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
                 {
@@ -1299,6 +1285,24 @@ namespace CloudServiceUtilities.DatabaseServices
                             {
                                 bConditionSatisfied = (double)_JObjectToCheck[BuiltCondition.Item1] < BuiltCondition.Item2.Item2.AsDouble;
                             }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist
+                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
+                            {
+                                var AsArr = (JArray)_JObjectToCheck[BuiltCondition.Item1];
+                                bool bExist = false;
+                                foreach (var Tok in AsArr)
+                                {
+                                    if (Tok.Type == JTokenType.Float)
+                                    {
+                                        if (((double)Tok) == BuiltCondition.Item2.Item2.AsDouble)
+                                        {
+                                            bExist = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                bConditionSatisfied = _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist ? bExist : !bExist;
+                            }
                             else
                             {
                                 bConditionSatisfied = (double)_JObjectToCheck[BuiltCondition.Item1] <= BuiltCondition.Item2.Item2.AsDouble;
@@ -1324,6 +1328,24 @@ namespace CloudServiceUtilities.DatabaseServices
                             else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLess)
                             {
                                 bConditionSatisfied = (long)_JObjectToCheck[BuiltCondition.Item1] < BuiltCondition.Item2.Item2.AsInteger;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist
+                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
+                            {
+                                var AsArr = (JArray)_JObjectToCheck[BuiltCondition.Item1];
+                                bool bExist = false;
+                                foreach (var Tok in AsArr)
+                                {
+                                    if (Tok.Type == JTokenType.Integer)
+                                    {
+                                        if (((int)Tok) == BuiltCondition.Item2.Item2.AsInteger)
+                                        {
+                                            bExist = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                bConditionSatisfied = _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist ? bExist : !bExist;
                             }
                             else
                             {
@@ -1374,44 +1396,7 @@ namespace CloudServiceUtilities.DatabaseServices
                     return false;
                 }
             }
-            else
-            {
-                if (BuiltCondition.Item1 == null)
-                {
-                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->ConditionCheck: Invalid condition expression.");
-                    return false;
-                }
-
-                bool bConditionSatisfied = false;
-
-                if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotExist)
-                {
-                    bConditionSatisfied = true;
-
-                    if (_JObjectToCheck != null)
-                    {
-                        if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
-                        {
-                            bConditionSatisfied = false;
-                        }
-                    }
-                }
-                else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeExists)
-                {
-                    if (_JObjectToCheck != null)
-                    {
-                        if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
-                        {
-                            bConditionSatisfied = true;
-                        }
-                    }
-                }
-
-                if (!bConditionSatisfied)
-                {
-                    return false;
-                }
-            }
+            
             return true;
         }
 
@@ -1537,26 +1522,34 @@ namespace CloudServiceUtilities.DatabaseServices
 
         private class ArrayElementExistConditionDatastore : DatabaseAttributeCondition
         {
-            public ArrayElementExistConditionDatastore(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
+            public ArrayElementExistConditionDatastore(string Attribute, PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
             {
-                BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>("N/A", new Tuple<string, PrimitiveType>("N/A", ArrayElement));
+                BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
+                (
+                    Attribute,
+                    new Tuple<string, PrimitiveType>("Value", ArrayElement)
+                );
             }
         }
-        public DatabaseAttributeCondition BuildArrayElementExistCondition(PrimitiveType ArrayElement)
+        public DatabaseAttributeCondition BuildArrayElementExistCondition(string Attribute, PrimitiveType ArrayElement)
         {
-            return new ArrayElementExistConditionDatastore(ArrayElement);
+            return new ArrayElementExistConditionDatastore(Attribute, ArrayElement);
         }
 
         private class ArrayElementNotExistConditionDatastore : DatabaseAttributeCondition
         {
-            public ArrayElementNotExistConditionDatastore(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
+            public ArrayElementNotExistConditionDatastore(string Attribute, PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
             {
-                BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>("N/A", new Tuple<string, PrimitiveType>("N/A", ArrayElement));
+                BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
+                (
+                    Attribute,
+                    new Tuple<string, PrimitiveType>("Value", ArrayElement)
+                );
             }
         }
-        public DatabaseAttributeCondition BuildArrayElementNotExistCondition(PrimitiveType ArrayElement)
+        public DatabaseAttributeCondition BuildArrayElementNotExistCondition(string Attribute, PrimitiveType ArrayElement)
         {
-            return new ArrayElementNotExistConditionDatastore(ArrayElement);
+            return new ArrayElementNotExistConditionDatastore(Attribute, ArrayElement);
         }
 
         private const int MAX_RETRY_NUMBER = 5;
