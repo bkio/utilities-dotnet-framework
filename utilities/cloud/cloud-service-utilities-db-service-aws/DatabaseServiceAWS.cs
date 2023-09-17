@@ -683,7 +683,8 @@ namespace CloudServiceUtilities.DatabaseServices
 
             if (_ConditionExpression != null)
             {
-                if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
+                if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist
+                    || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
                 {
                     var BuiltCondition = _ConditionExpression.GetBuiltCondition();
 
@@ -1363,9 +1364,25 @@ namespace CloudServiceUtilities.DatabaseServices
             return new AttributeNotExistConditionDynamodb(Attribute);
         }
 
-        private class BArrayElementNotExistConditionDynamodb : DatabaseAttributeCondition
+        private class ArrayElementExistConditionDynamodb : DatabaseAttributeCondition
         {
-            public BArrayElementNotExistConditionDynamodb(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
+            public ArrayElementExistConditionDynamodb(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
+            {
+                BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
+                (
+                    "CONTAINS $ARRAY_NAME$ :cond_val",
+                    new Tuple<string, PrimitiveType>(":cond_val", ArrayElement)
+                );
+            }
+        }
+        public DatabaseAttributeCondition BuildArrayElementExistCondition(PrimitiveType ArrayElement)
+        {
+            return new ArrayElementExistConditionDynamodb(ArrayElement);
+        }
+
+        private class ArrayElementNotExistConditionDynamodb : DatabaseAttributeCondition
+        {
+            public ArrayElementNotExistConditionDynamodb(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1376,7 +1393,7 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildArrayElementNotExistCondition(PrimitiveType ArrayElement)
         {
-            return new BArrayElementNotExistConditionDynamodb(ArrayElement);
+            return new ArrayElementNotExistConditionDynamodb(ArrayElement);
         }
     }
 }

@@ -281,7 +281,7 @@ namespace CloudServiceUtilities.DatabaseServices
             }
         }
 
-        private bool CompareJTokenWithBPrimitive(JToken _Token, PrimitiveType _Primitive)
+        private bool CompareJTokenWithPrimitive(JToken _Token, PrimitiveType _Primitive)
         {
             switch (_Primitive.Type)
             {
@@ -694,7 +694,8 @@ namespace CloudServiceUtilities.DatabaseServices
 
                         if (_ConditionExpression != null)
                         {
-                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
+                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist
+                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
                             {
                                 var BuiltCondition = _ConditionExpression.GetBuiltCondition();
 
@@ -706,12 +707,25 @@ namespace CloudServiceUtilities.DatabaseServices
 
                                 if (ItemAsArray != null)
                                 {
-                                    foreach (var CurTok in ItemAsArray)
+                                    if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist)
                                     {
-                                        if (CompareJTokenWithBPrimitive(CurTok, BuiltCondition.Item2.Item2))
+                                        var bFound = false;
+                                        foreach (var CurTok in ItemAsArray)
                                         {
-                                            return false;
+                                            if (CompareJTokenWithPrimitive(CurTok, BuiltCondition.Item2.Item2))
+                                            {
+                                                bFound = true;
+                                                break;
+                                            }
                                         }
+                                        if (!bFound)
+                                            return false;
+                                    }
+                                    else
+                                    {
+                                        foreach (var CurTok in ItemAsArray)
+                                            if (CompareJTokenWithPrimitive(CurTok, BuiltCondition.Item2.Item2))
+                                                return false;
                                     }
                                 }
                             }
@@ -892,7 +906,7 @@ namespace CloudServiceUtilities.DatabaseServices
                             bool bFound = false;
                             foreach (var _ElementValueEntry in _ElementValueEntries)
                             {
-                                if (CompareJTokenWithBPrimitive(CurToken, _ElementValueEntry))
+                                if (CompareJTokenWithPrimitive(CurToken, _ElementValueEntry))
                                 {
                                     bFound = true;
                                     break;
@@ -1184,49 +1198,58 @@ namespace CloudServiceUtilities.DatabaseServices
         private bool Internal_ScanTable(string _Table, Func<JObject, bool> _FilterCallback, out List<JObject> _ReturnItem, Action<string> _ErrorMessageAction = null)
         {
             DatastoreQueryResults QueryResult = null;
-            try
+            do
             {
-                QueryResult = DSDB.RunQuery(new Query(_Table));
-            }
-            catch (Exception e)
-            {
-                _ReturnItem = null;
-                _ErrorMessageAction?.Invoke($"DatabaseServiceGC->ScanTable: Exception: {e.Message}");
-                return false;
-            }
-
-            _ReturnItem = new List<JObject>();
-
-            if (QueryResult != null)
-            {
-                foreach (var Current in QueryResult.Entities)
+                try
                 {
-                    if (Current != null)
+                    var NewQuery = new Query(_Table);
+                    if (QueryResult != null)
                     {
-                        var AsJson = FromEntityToJson(Current);
-                        string KeyCombined = Current.Key.Path[0].Name;
-                        string[] KeySplitted = KeyCombined.Split(':');
-                        if (KeySplitted != null && KeySplitted.Length >= 2)
+                        NewQuery.StartCursor = QueryResult.EndCursor;
+                    }
+                    QueryResult = DSDB.RunQuery(NewQuery);
+                }
+                catch (Exception e)
+                {
+                    _ReturnItem = null;
+                    _ErrorMessageAction?.Invoke($"DatabaseServiceGC->ScanTable: Exception: {e.Message}");
+                    return false;
+                }
+                _ReturnItem = new List<JObject>();
+
+                if (QueryResult != null)
+                {
+                    foreach (var Current in QueryResult.Entities)
+                    {
+                        if (Current != null)
                         {
-                            string KeyName = KeySplitted[0];
-                            string KeyValue = "";
-
-                            for (int i = 1; i < KeySplitted.Length; i++)
+                            var AsJson = FromEntityToJson(Current);
+                            string KeyCombined = Current.Key.Path[0].Name;
+                            string[] KeySplitted = KeyCombined.Split(':');
+                            if (KeySplitted != null && KeySplitted.Length >= 2)
                             {
-                                KeyValue += KeySplitted[i];
-                            }
+                                string KeyName = KeySplitted[0];
+                                string KeyValue = "";
 
-                            AddKeyToJson(AsJson, KeyName, new PrimitiveType(KeyValue));
-                            if (_FilterCallback(AsJson))
-                            {
-                                Utility.SortJObject(AsJson, true);
+                                for (int i = 1; i < KeySplitted.Length; i++)
+                                {
+                                    KeyValue += KeySplitted[i];
+                                }
 
-                                _ReturnItem.Add(AsJson);
+                                AddKeyToJson(AsJson, KeyName, new PrimitiveType(KeyValue));
+                                if (_FilterCallback(AsJson))
+                                {
+                                    Utility.SortJObject(AsJson, true);
+
+                                    _ReturnItem.Add(AsJson);
+                                }
                             }
                         }
                     }
                 }
             }
+            while (QueryResult != null && QueryResult.MoreResults != QueryResultBatch.Types.MoreResultsType.NoMoreResults);
+            
             return true;
         }
 
@@ -1512,16 +1535,28 @@ namespace CloudServiceUtilities.DatabaseServices
             return new AttributeNotExistConditionDatastore(Attribute);
         }
 
-        private class BArrayElementNotExistConditionDatastore : DatabaseAttributeCondition
+        private class ArrayElementExistConditionDatastore : DatabaseAttributeCondition
         {
-            public BArrayElementNotExistConditionDatastore(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
+            public ArrayElementExistConditionDatastore(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
+            {
+                BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>("N/A", new Tuple<string, PrimitiveType>("N/A", ArrayElement));
+            }
+        }
+        public DatabaseAttributeCondition BuildArrayElementExistCondition(PrimitiveType ArrayElement)
+        {
+            return new ArrayElementExistConditionDatastore(ArrayElement);
+        }
+
+        private class ArrayElementNotExistConditionDatastore : DatabaseAttributeCondition
+        {
+            public ArrayElementNotExistConditionDatastore(PrimitiveType ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>("N/A", new Tuple<string, PrimitiveType>("N/A", ArrayElement));
             }
         }
         public DatabaseAttributeCondition BuildArrayElementNotExistCondition(PrimitiveType ArrayElement)
         {
-            return new BArrayElementNotExistConditionDatastore(ArrayElement);
+            return new ArrayElementNotExistConditionDatastore(ArrayElement);
         }
 
         private const int MAX_RETRY_NUMBER = 5;

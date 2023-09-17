@@ -1,9 +1,12 @@
 ﻿/// Copyright 2022- Burak Kara, All rights reserved.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
 using MongoDB.Bson;
@@ -197,14 +200,14 @@ namespace CloudServiceUtilities.DatabaseServices
                 MongoInternalIdentity _InternalIdentity = new MongoInternalIdentity(_DatabaseName, _UserName);
                 PasswordEvidence _PasswordEvidence = new PasswordEvidence(_MongoPassword);
                 MongoCredential _MongoCredential = new MongoCredential(_AuthMechnasim, _InternalIdentity, _PasswordEvidence);
-                //MongoCredential _MongoCredential = MongoCredential.CreateCredential(_DatabaseName, _UserName, _MongoPassword);
 
-                var _ClientSettings = new MongoClientSettings();
-                _ClientSettings.Servers = _ServerList.ToArray();
-                _ClientSettings.ConnectionMode = ConnectionMode.ReplicaSet;
-                _ClientSettings.ReplicaSetName = _ReplicaSetName;
-                _ClientSettings.Credential = _MongoCredential;
-                var Client = new MongoClient(_ClientSettings);
+                var Client = new MongoClient(new MongoClientSettings
+                {
+                    Servers = _ServerList.ToArray(),
+                    ConnectionMode = ConnectionMode.ReplicaSet,
+                    ReplicaSetName = _ReplicaSetName,
+                    Credential = _MongoCredential
+                });
                 MongoDB = Client.GetDatabase(_MongoDatabase);
                 bInitializationSucceed = MongoDB != null;
             }
@@ -509,7 +512,8 @@ namespace CloudServiceUtilities.DatabaseServices
             {
                 if (_ConditionExpression != null)
                 {
-                    if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
+                    if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementExist
+                        || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
                     {
                         var FirstCondition = (_ConditionExpression as AttributeArrayElementNotExistConditionMongoDb).GetArrayElementFilter(_ElementName);
                         var FinalCondition = Builders<BsonDocument>.Filter.And(Filter, FirstCondition);
@@ -518,6 +522,11 @@ namespace CloudServiceUtilities.DatabaseServices
                         {
                             return false;
                         }
+                    }
+                    else
+                    {
+                        _ErrorMessageAction?.Invoke("DatabaseServiceMongoDB->AddElementsToArrayItem: Condition is not valid for this operation.");
+                        return false;
                     }
                 }
 
@@ -588,7 +597,15 @@ namespace CloudServiceUtilities.DatabaseServices
         /// <para>Check <seealso cref="IDatabaseServiceInterface.RemoveElementsFromArrayItem"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool RemoveElementsFromArrayItem(string _Table, string _KeyName, PrimitiveType _KeyValue, string _ElementName, PrimitiveType[] _ElementValueEntries, out JObject _ReturnItem, EReturnItemBehaviour _ReturnItemBehaviour, Action<string> _ErrorMessageAction)
+        public bool RemoveElementsFromArrayItem(
+            string _Table, 
+            string _KeyName, 
+            PrimitiveType _KeyValue, 
+            string _ElementName, 
+            PrimitiveType[] _ElementValueEntries, 
+            out JObject _ReturnItem, 
+            EReturnItemBehaviour _ReturnItemBehaviour, 
+            Action<string> _ErrorMessageAction)
         {
             _ReturnItem = null;
 
@@ -748,7 +765,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
             var Filter = Builders<BsonDocument>.Filter.Empty;
 
-            List<BsonDocument> ReturnedSearch;
+            var ReturnedSearch = new List<BsonDocument>();
 
             try
             {
@@ -756,12 +773,14 @@ namespace CloudServiceUtilities.DatabaseServices
                 {
                     ScanTask.Wait();
 
-                    using (var ToListTask = ScanTask.Result.ToListAsync())
+                    do
                     {
-                        ToListTask.Wait();
-
-                        ReturnedSearch = ToListTask.Result;
+                        if (ScanTask.Result.Current != null)
+                        {
+                            ReturnedSearch.AddRange(ScanTask.Result.Current.ToList());
+                        }
                     }
+                    while (ScanTask.Result.MoveNext());
                 }
             }
             catch (Exception e)
@@ -801,25 +820,26 @@ namespace CloudServiceUtilities.DatabaseServices
 
             List<JObject> Results = new List<JObject>();
 
-            List<BsonDocument> ReturnedSearch;
+            var ReturnedSearch = new List<BsonDocument>();
 
             try
             {
                 using (var ScanTask = Table.FindAsync(Filter))
                 {
                     ScanTask.Wait();
-
-                    using (var ToListTask = ScanTask.Result.ToListAsync())
+                    do
                     {
-                        ToListTask.Wait();
-
-                        ReturnedSearch = ToListTask.Result;
+                        if (ScanTask.Result.Current != null)
+                        {
+                            ReturnedSearch.AddRange(ScanTask.Result.Current.ToList());
+                        }
                     }
+                    while (ScanTask.Result.MoveNext());
                 }
             }
             catch (Exception e)
             {
-                _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->ScanTable: {e.Message}, Trace: {e.StackTrace}");
+                _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->ScanTableFilterBy: {e.Message}, Trace: {e.StackTrace}");
                 return false;
             }
 
@@ -836,10 +856,11 @@ namespace CloudServiceUtilities.DatabaseServices
 
             if (_ReturnedSearch != null)
             {
-                List<JObject> TempResults = new List<JObject>();
                 try
                 {
-                    foreach (var Document in _ReturnedSearch)
+                    var TempResults = new ConcurrentBag<JObject>();
+
+                    Parallel.ForEach(_ReturnedSearch, (Document) =>
                     {
                         var CreatedJson = BsonToJObject(Document);
                         foreach (var _KeyName in _PossibleKeyNames)
@@ -852,9 +873,9 @@ namespace CloudServiceUtilities.DatabaseServices
                         }
                         Utility.SortJObject(CreatedJson, true);
                         TempResults.Add(CreatedJson);
-                    }
+                    });
 
-                    _ReturnItem = TempResults;
+                    _ReturnItem = TempResults.ToList();
                 }
                 catch (Newtonsoft.Json.JsonReaderException e)
                 {
@@ -877,6 +898,41 @@ namespace CloudServiceUtilities.DatabaseServices
             public DatabaseAttributeConditionMongo(EDatabaseAttributeConditionType _ConditionType) : base(_ConditionType)
             {
             }
+        }
+
+        private class AttributeArrayElementExistConditionMongoDb : DatabaseAttributeConditionMongo
+        {
+            private readonly PrimitiveType ArrayElement;
+            public AttributeArrayElementExistConditionMongoDb(PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
+            {
+                ArrayElement = _ArrayElement;
+            }
+
+            public FilterDefinition<BsonDocument> GetArrayElementFilter(string ArrName)
+            {
+                switch (ArrayElement.Type)
+                {
+                    case EPrimitiveTypeEnum.Double:
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new double[] { ArrayElement.AsDouble });
+                        break;
+                    case EPrimitiveTypeEnum.Integer:
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new long[] { ArrayElement.AsInteger });
+                        break;
+                    case EPrimitiveTypeEnum.ByteArray:
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new byte[][] { ArrayElement.AsByteArray });
+                        break;
+                    case EPrimitiveTypeEnum.String:
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new string[] { ArrayElement.AsString });
+                        break;
+                }
+                return Filter;
+            }
+        }
+
+        public DatabaseAttributeCondition BuildArrayElementExistCondition(PrimitiveType ArrayElement)
+        {
+
+            return new AttributeArrayElementExistConditionMongoDb(ArrayElement);
         }
 
         private class AttributeArrayElementNotExistConditionMongoDb : DatabaseAttributeConditionMongo

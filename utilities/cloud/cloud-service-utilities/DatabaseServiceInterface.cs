@@ -26,6 +26,7 @@ namespace CloudServiceUtilities
         AttributeLessOrEqual,
         AttributeExists,
         AttributeNotExist,
+        ArrayElementExist,
         ArrayElementNotExist
     };
 
@@ -100,6 +101,7 @@ namespace CloudServiceUtilities
         DatabaseAttributeCondition BuildAttributeLessOrEqualCondition(string Attribute, PrimitiveType Value);
         DatabaseAttributeCondition BuildAttributeExistsCondition(string Attribute);
         DatabaseAttributeCondition BuildAttributeNotExistCondition(string Attribute);
+        DatabaseAttributeCondition BuildArrayElementExistCondition(PrimitiveType ArrayElement);
         DatabaseAttributeCondition BuildArrayElementNotExistCondition(PrimitiveType ArrayElement);
 
         /// <summary>
