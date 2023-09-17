@@ -858,14 +858,14 @@ namespace CloudServiceUtilities.DatabaseServices
                 }
                 catch (Newtonsoft.Json.JsonReaderException e)
                 {
-                    _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->ScanTable: JsonReaderException: {e.Message}, Trace: {e.StackTrace}");
+                    _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->Internal_ScanTable: JsonReaderException: {e.Message}, Trace: {e.StackTrace}");
                     return false;
                 }
                 return true;
             }
             else
             {
-                _ErrorMessageAction?.Invoke("DatabaseServiceMongoDB->ScanTable: TableObject.ScanTable returned null.");
+                _ErrorMessageAction?.Invoke("DatabaseServiceMongoDB->Internal_ScanTable: TableObject.ScanTable returned null.");
             }
 
             return false;
