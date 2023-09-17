@@ -803,7 +803,11 @@ namespace CloudServiceUtilities.DatabaseServices
 
             try
             {
-                using (var UpdateTask = Table.FindOneAndUpdateAsync(Filter, Update, new FindOneAndUpdateOptions<BsonDocument, BsonDocument>() { ReturnDocument = ReturnDocument.After }))
+                using (var UpdateTask = Table.FindOneAndUpdateAsync(Filter, Update, new FindOneAndUpdateOptions<BsonDocument, BsonDocument>() 
+                { 
+                    ReturnDocument = ReturnDocument.After,
+                    IsUpsert = true
+                }))
                 {
                     UpdateTask.Wait();
                     BsonDocument Document = UpdateTask.Result;
