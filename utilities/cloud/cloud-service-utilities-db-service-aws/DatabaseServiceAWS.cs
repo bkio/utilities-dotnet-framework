@@ -2,11 +2,11 @@
 
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.DocumentModel;
 using Amazon.DynamoDBv2.Model;
 using CommonUtilities;
-using Newtonsoft.Json.Linq;
 
 namespace CloudServiceUtilities.DatabaseServices
 {
@@ -506,36 +506,7 @@ namespace CloudServiceUtilities.DatabaseServices
                     }
 
                     //Set condition expression
-                    if (_ConditionExpression != null)
-                    {
-                        var BuiltCondition = _ConditionExpression.GetBuiltCondition();
-                        if (BuiltCondition != null)
-                        {
-                            Expression ConditionalExpression = new Expression
-                            {
-                                ExpressionStatement = BuiltCondition.Item1
-                            };
-                            if (BuiltCondition.Item2 != null)
-                            {
-                                switch (BuiltCondition.Item2.Item2.Type)
-                                {
-                                    case EPrimitiveTypeEnum.String:
-                                        ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsString;
-                                        break;
-                                    case EPrimitiveTypeEnum.Integer:
-                                        ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsInteger;
-                                        break;
-                                    case EPrimitiveTypeEnum.Double:
-                                        ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsDouble;
-                                        break;
-                                    case EPrimitiveTypeEnum.ByteArray:
-                                        ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.ToString();
-                                        break;
-                                }
-                            }
-                            Config.ConditionalExpression = ConditionalExpression;
-                        }
-                    }
+                    Config.ConditionalExpression = BuildConditionalExpression(_ConditionExpression);
 
                     //Update item in the table
                     try
@@ -1143,6 +1114,37 @@ namespace CloudServiceUtilities.DatabaseServices
             out List<JObject> _ReturnItem, 
             Action<string> _ErrorMessageAction = null)
         {
+            return Internal_ScanTable(_Table, _PossibleKeyNames, out _ReturnItem, null, _ErrorMessageAction);
+        }
+
+        /// <summary>
+        /// 
+        /// <para>ScanTableFilterBy</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTable"/> for detailed documentation</para>
+        /// 
+        /// </summary>
+        public bool ScanTableFilterBy(
+            string _Table,
+            string[] _PossibleKeyNames,
+            DatabaseAttributeCondition _FilterBy,
+            out List<JObject> _ReturnItem,
+            Action<string> _ErrorMessageAction = null)
+        {
+            if (_FilterBy == null)
+            {
+                return ScanTable(_Table, _PossibleKeyNames, out _ReturnItem, _ErrorMessageAction);
+            }
+            return Internal_ScanTable(_Table, _PossibleKeyNames, out _ReturnItem, BuildConditionalExpression(_FilterBy), _ErrorMessageAction);
+        }
+
+        private bool Internal_ScanTable(
+            string _Table,
+            string[] _PossibleKeyNames,
+            out List<JObject> _ReturnItem,
+            Expression _ConditionalExpression = null,
+            Action<string> _ErrorMessageAction = null)
+        {
             _ReturnItem = null;
 
             //Try getting table definition
@@ -1152,6 +1154,10 @@ namespace CloudServiceUtilities.DatabaseServices
                 {
                     Select = SelectValues.AllAttributes
                 };
+                if (_ConditionalExpression != null)
+                {
+                    Config.FilterExpression = _ConditionalExpression;
+                }
 
                 //Scan the table
                 Search ReturnedSearch = null;
@@ -1162,7 +1168,7 @@ namespace CloudServiceUtilities.DatabaseServices
                 }
                 catch (Exception e)
                 {
-                    _ErrorMessageAction?.Invoke($"DatabaseServiceAWS->ScanTable: {e.Message}, Trace: { e.StackTrace}");
+                    _ErrorMessageAction?.Invoke($"DatabaseServiceAWS->Internal_ScanTable: {e.Message}, Trace: {e.StackTrace}");
                     return false;
                 }
 
@@ -1188,26 +1194,58 @@ namespace CloudServiceUtilities.DatabaseServices
                         }
                         while (!ReturnedSearch.IsDone);
 
-                        _ReturnItem = TempResults;                        
+                        _ReturnItem = TempResults;
                     }
                     catch (Newtonsoft.Json.JsonReaderException e)
                     {
-                        _ErrorMessageAction?.Invoke($"DatabaseServiceAWS->ScanTable: JsonReaderException: {e.Message}, Trace: { e.StackTrace}");
+                        _ErrorMessageAction?.Invoke($"DatabaseServiceAWS->Internal_ScanTable: JsonReaderException: {e.Message}, Trace: {e.StackTrace}");
                         return false;
                     }
                     return true;
                 }
                 else
                 {
-                    _ErrorMessageAction?.Invoke("DatabaseServiceAWS->ScanTable: TableObject.ScanTable returned null.");
+                    _ErrorMessageAction?.Invoke("DatabaseServiceAWS->Internal_ScanTable: TableObject.ScanTable returned null.");
                 }
             }
             return false;
         }
-
-        private class BAttributeEqualsConditionDynamodb : DatabaseAttributeCondition
+        
+        private Expression BuildConditionalExpression(DatabaseAttributeCondition _ConditionExpression)
         {
-            public BAttributeEqualsConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeEquals)
+            var BuiltCondition = _ConditionExpression.GetBuiltCondition();
+            if (BuiltCondition != null)
+            {
+                var ConditionalExpression = new Expression
+                {
+                    ExpressionStatement = BuiltCondition.Item1
+                };
+                if (BuiltCondition.Item2 != null)
+                {
+                    switch (BuiltCondition.Item2.Item2.Type)
+                    {
+                        case EPrimitiveTypeEnum.String:
+                            ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsString;
+                            break;
+                        case EPrimitiveTypeEnum.Integer:
+                            ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsInteger;
+                            break;
+                        case EPrimitiveTypeEnum.Double:
+                            ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.AsDouble;
+                            break;
+                        case EPrimitiveTypeEnum.ByteArray:
+                            ConditionalExpression.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = BuiltCondition.Item2.Item2.ToString();
+                            break;
+                    }
+                }
+                return ConditionalExpression;
+            }
+            return null;
+        }
+
+        private class AttributeEqualsConditionDynamodb : DatabaseAttributeCondition
+        {
+            public AttributeEqualsConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeEquals)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1218,12 +1256,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeEqualsCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeEqualsConditionDynamodb(Attribute, Value);
+            return new AttributeEqualsConditionDynamodb(Attribute, Value);
         }
 
-        private class BAttributeNotEqualsConditionDynamodb : DatabaseAttributeCondition
+        private class AttributeNotEqualsConditionDynamodb : DatabaseAttributeCondition
         {
-            public BAttributeNotEqualsConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeNotEquals)
+            public AttributeNotEqualsConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeNotEquals)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1234,12 +1272,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeNotEqualsCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeNotEqualsConditionDynamodb(Attribute, Value);
+            return new AttributeNotEqualsConditionDynamodb(Attribute, Value);
         }
 
-        private class BAttributeGreaterConditionDynamodb : DatabaseAttributeCondition
+        private class AttributeGreaterConditionDynamodb : DatabaseAttributeCondition
         {
-            public BAttributeGreaterConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreater)
+            public AttributeGreaterConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreater)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1250,12 +1288,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeGreaterCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeGreaterConditionDynamodb(Attribute, Value);
+            return new AttributeGreaterConditionDynamodb(Attribute, Value);
         }
 
-        private class BAttributeGreaterOrEqualConditionDynamodb : DatabaseAttributeCondition
+        private class AttributeGreaterOrEqualConditionDynamodb : DatabaseAttributeCondition
         {
-            public BAttributeGreaterOrEqualConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
+            public AttributeGreaterOrEqualConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1266,12 +1304,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeGreaterOrEqualCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeGreaterOrEqualConditionDynamodb(Attribute, Value);
+            return new AttributeGreaterOrEqualConditionDynamodb(Attribute, Value);
         }
 
-        private class BAttributeLessConditionDynamodb : DatabaseAttributeCondition
+        private class AttributeLessConditionDynamodb : DatabaseAttributeCondition
         {
-            public BAttributeLessConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLess)
+            public AttributeLessConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLess)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1282,12 +1320,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeLessCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeLessConditionDynamodb(Attribute, Value);
+            return new AttributeLessConditionDynamodb(Attribute, Value);
         }
 
-        private class BAttributeLessOrEqualConditionDynamodb : DatabaseAttributeCondition
+        private class AttributeLessOrEqualConditionDynamodb : DatabaseAttributeCondition
         {
-            public BAttributeLessOrEqualConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLessOrEqual)
+            public AttributeLessOrEqualConditionDynamodb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLessOrEqual)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1298,31 +1336,31 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeLessOrEqualCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeLessOrEqualConditionDynamodb(Attribute, Value);
+            return new AttributeLessOrEqualConditionDynamodb(Attribute, Value);
         }
 
-        private class BAttributeExistsConditionDynamodb : DatabaseAttributeCondition
+        private class AttributeExistsConditionDynamodb : DatabaseAttributeCondition
         {
-            public BAttributeExistsConditionDynamodb(string Attribute) : base(EDatabaseAttributeConditionType.AttributeExists)
+            public AttributeExistsConditionDynamodb(string Attribute) : base(EDatabaseAttributeConditionType.AttributeExists)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>($"attribute_exists({Attribute})", null);
             }
         }
         public DatabaseAttributeCondition BuildAttributeExistsCondition(string Attribute)
         {
-            return new BAttributeExistsConditionDynamodb(Attribute);
+            return new AttributeExistsConditionDynamodb(Attribute);
         }
 
-        private class BAttributeNotExistConditionDynamodb : DatabaseAttributeCondition
+        private class AttributeNotExistConditionDynamodb : DatabaseAttributeCondition
         {
-            public BAttributeNotExistConditionDynamodb(string Attribute) : base(EDatabaseAttributeConditionType.AttributeNotExist)
+            public AttributeNotExistConditionDynamodb(string Attribute) : base(EDatabaseAttributeConditionType.AttributeNotExist)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>($"attribute_not_exists({Attribute})", null);
             }
         }
         public DatabaseAttributeCondition BuildAttributeNotExistCondition(string Attribute)
         {
-            return new BAttributeNotExistConditionDynamodb(Attribute);
+            return new AttributeNotExistConditionDynamodb(Attribute);
         }
 
         private class BArrayElementNotExistConditionDynamodb : DatabaseAttributeCondition

@@ -1,17 +1,17 @@
 ﻿/// Copyright 2022- Burak Kara, All rights reserved.
-/// 
+
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using CommonUtilities;
+using Newtonsoft.Json.Bson;
+using Newtonsoft.Json.Linq;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
-using Newtonsoft.Json.Bson;
-using Newtonsoft.Json.Linq;
+using CommonUtilities;
 
 namespace CloudServiceUtilities.DatabaseServices
 {
@@ -60,7 +60,7 @@ namespace CloudServiceUtilities.DatabaseServices
                 }
                 return true;
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->TryCreateTable: Given table(collection) couldn't create. Error: {ex.Message} \n Trace: {ex.StackTrace}");
                 return false;
@@ -372,28 +372,13 @@ namespace CloudServiceUtilities.DatabaseServices
 
                 if (_ConditionExpression != null)
                 {
-                    if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotExist)
-                    {
-                        //This actually is a "AttributeExist"; therefore we must check if there is no value returning with the condition.
-                        var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
-                        var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
+                    var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                    var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
 
-                        if (Exists(Table, FinalFilter)) //Because it is AttributeExist (intentionally, see the implementation at the bottom)
-                        {
-                            //Condition failed.
-                            return false;
-                        }
-                    }
-                    else
+                    if (!HasTableMatchingResultWithFilter(Table, FinalFilter))
                     {
-                        var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
-                        var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
-
-                        if (!Exists(Table, FinalFilter))
-                        {
-                            //Condition failed.
-                            return false;
-                        }
+                        //Condition failed.
+                        return false;
                     }
                 }
 
@@ -526,14 +511,11 @@ namespace CloudServiceUtilities.DatabaseServices
                 {
                     if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.ArrayElementNotExist)
                     {
-                        //This actually is a "ArrayElementExist"; therefore we must check if there is no value returning with the condition.
-
-                        var FirstCondition = (_ConditionExpression as BAttributeArrayElementNotExistConditionMongoDb).GetArrayElementFilter(_ElementName);
+                        var FirstCondition = (_ConditionExpression as AttributeArrayElementNotExistConditionMongoDb).GetArrayElementFilter(_ElementName);
                         var FinalCondition = Builders<BsonDocument>.Filter.And(Filter, FirstCondition);
                         
-                        if (Exists(Table, FinalCondition)) //Because it is ArrayElementExist (intentionally, see the implementation at the bottom)
+                        if (!HasTableMatchingResultWithFilter(Table, FinalCondition))
                         {
-                            //Condition failed.
                             return false;
                         }
                     }
@@ -788,12 +770,76 @@ namespace CloudServiceUtilities.DatabaseServices
                 return false;
             }
 
-            if (ReturnedSearch != null)
+            return Internal_ScanTable(_PossibleKeyNames, ReturnedSearch, out _ReturnItem, _ErrorMessageAction);
+        }
+
+        /// <summary>
+        /// 
+        /// <para>ScanTableFilterBy</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTable"/> for detailed documentation</para>
+        /// 
+        /// </summary>
+        public bool ScanTableFilterBy(
+            string _Table,
+            string[] _PossibleKeyNames,
+            DatabaseAttributeCondition _FilterBy,
+            out List<JObject> _ReturnItem,
+            Action<string> _ErrorMessageAction = null)
+        {
+            if (_FilterBy == null)
+            {
+                return ScanTable(_Table, _PossibleKeyNames, out _ReturnItem, _ErrorMessageAction);
+            }
+
+            _ReturnItem = null;
+
+            var Table = GetTable(_Table);
+            if (Table == null) return false;
+
+            var Filter = (_FilterBy as DatabaseAttributeConditionMongo).Filter;
+
+            List<JObject> Results = new List<JObject>();
+
+            List<BsonDocument> ReturnedSearch;
+
+            try
+            {
+                using (var ScanTask = Table.FindAsync(Filter))
+                {
+                    ScanTask.Wait();
+
+                    using (var ToListTask = ScanTask.Result.ToListAsync())
+                    {
+                        ToListTask.Wait();
+
+                        ReturnedSearch = ToListTask.Result;
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->ScanTable: {e.Message}, Trace: {e.StackTrace}");
+                return false;
+            }
+
+            return Internal_ScanTable(_PossibleKeyNames, ReturnedSearch, out _ReturnItem, _ErrorMessageAction);
+        }
+
+        private bool Internal_ScanTable(
+            string[] _PossibleKeyNames, 
+            List<BsonDocument> _ReturnedSearch,
+            out List<JObject> _ReturnItem,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _ReturnItem = null;
+
+            if (_ReturnedSearch != null)
             {
                 List<JObject> TempResults = new List<JObject>();
                 try
                 {
-                    foreach (var Document in ReturnedSearch)
+                    foreach (var Document in _ReturnedSearch)
                     {
                         var CreatedJson = BsonToJObject(Document);
                         foreach (var _KeyName in _PossibleKeyNames)
@@ -812,14 +858,14 @@ namespace CloudServiceUtilities.DatabaseServices
                 }
                 catch (Newtonsoft.Json.JsonReaderException e)
                 {
-                    _ErrorMessageAction?.Invoke($"DatabaseServiceAWS->ScanTable: JsonReaderException: {e.Message}, Trace: {e.StackTrace}");
+                    _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->ScanTable: JsonReaderException: {e.Message}, Trace: {e.StackTrace}");
                     return false;
                 }
                 return true;
             }
             else
             {
-                _ErrorMessageAction?.Invoke("DatabaseServiceAWS->ScanTable: TableObject.ScanTable returned null.");
+                _ErrorMessageAction?.Invoke("DatabaseServiceMongoDB->ScanTable: TableObject.ScanTable returned null.");
             }
 
             return false;
@@ -833,31 +879,29 @@ namespace CloudServiceUtilities.DatabaseServices
             }
         }
 
-        private class BAttributeArrayElementNotExistConditionMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeArrayElementNotExistConditionMongoDb : DatabaseAttributeConditionMongo
         {
-            private PrimitiveType ArrayElement;
-            public BAttributeArrayElementNotExistConditionMongoDb(PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
+            private readonly PrimitiveType ArrayElement;
+            public AttributeArrayElementNotExistConditionMongoDb(PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
             {
                 ArrayElement = _ArrayElement;
             }
-
-            /*Due to the implementation in AddArrayItem, this has to be ArrayElementExist!*/
 
             public FilterDefinition<BsonDocument> GetArrayElementFilter(string ArrName)
             {
                 switch (ArrayElement.Type)
                 {
                     case EPrimitiveTypeEnum.Double:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new double[] { ArrayElement.AsDouble });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(ArrName, new double[] { ArrayElement.AsDouble });
                         break;
                     case EPrimitiveTypeEnum.Integer:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new long[] { ArrayElement.AsInteger });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(ArrName, new long[] { ArrayElement.AsInteger });
                         break;
                     case EPrimitiveTypeEnum.ByteArray:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new byte[][] { ArrayElement.AsByteArray });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(ArrName, new byte[][] { ArrayElement.AsByteArray });
                         break;
                     case EPrimitiveTypeEnum.String:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(ArrName, new string[] { ArrayElement.AsString });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(ArrName, new string[] { ArrayElement.AsString });
                         break;
                 }
                 return Filter;
@@ -867,12 +911,12 @@ namespace CloudServiceUtilities.DatabaseServices
         public DatabaseAttributeCondition BuildArrayElementNotExistCondition(PrimitiveType ArrayElement)
         {
 
-            return new BAttributeArrayElementNotExistConditionMongoDb(ArrayElement);
+            return new AttributeArrayElementNotExistConditionMongoDb(ArrayElement);
         }
 
-        private class BAttributeEqualsConditionMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeEqualsConditionMongoDb : DatabaseAttributeConditionMongo
         {
-            public BAttributeEqualsConditionMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeEquals)
+            public AttributeEqualsConditionMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeEquals)
             {
                 switch (Value.Type)
                 {
@@ -895,12 +939,12 @@ namespace CloudServiceUtilities.DatabaseServices
 
         public DatabaseAttributeCondition BuildAttributeEqualsCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeEqualsConditionMongoDb(Attribute, Value);
+            return new AttributeEqualsConditionMongoDb(Attribute, Value);
         }
 
-        private class BAttributeExistConditionMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeExistConditionMongoDb : DatabaseAttributeConditionMongo
         {
-            public BAttributeExistConditionMongoDb(string Attribute) : base(EDatabaseAttributeConditionType.AttributeExists)
+            public AttributeExistConditionMongoDb(string Attribute) : base(EDatabaseAttributeConditionType.AttributeExists)
             {
                 Filter = Builders<BsonDocument>.Filter.Exists(Attribute, true);
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>(Attribute, null);
@@ -909,12 +953,12 @@ namespace CloudServiceUtilities.DatabaseServices
 
         public DatabaseAttributeCondition BuildAttributeExistsCondition(string Attribute)
         {
-            return new BAttributeExistConditionMongoDb(Attribute);
+            return new AttributeExistConditionMongoDb(Attribute);
         }
 
-        private class BAttributeGreaterMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeGreaterMongoDb : DatabaseAttributeConditionMongo
         {
-            public BAttributeGreaterMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreater)
+            public AttributeGreaterMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreater)
             {
                 switch (Value.Type)
                 {
@@ -937,12 +981,12 @@ namespace CloudServiceUtilities.DatabaseServices
 
         public DatabaseAttributeCondition BuildAttributeGreaterCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeGreaterMongoDb(Attribute, Value);
+            return new AttributeGreaterMongoDb(Attribute, Value);
         }
 
-        private class BAttributeGreaterOrEqualMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeGreaterOrEqualMongoDb : DatabaseAttributeConditionMongo
         {
-            public BAttributeGreaterOrEqualMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
+            public AttributeGreaterOrEqualMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
             {
                 switch (Value.Type)
                 {
@@ -965,12 +1009,12 @@ namespace CloudServiceUtilities.DatabaseServices
 
         public DatabaseAttributeCondition BuildAttributeGreaterOrEqualCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeGreaterOrEqualMongoDb(Attribute, Value);
+            return new AttributeGreaterOrEqualMongoDb(Attribute, Value);
         }
 
-        private class BAttributeLessMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeLessMongoDb : DatabaseAttributeConditionMongo
         {
-            public BAttributeLessMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLess)
+            public AttributeLessMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLess)
             {
                 switch (Value.Type)
                 {
@@ -993,12 +1037,12 @@ namespace CloudServiceUtilities.DatabaseServices
 
         public DatabaseAttributeCondition BuildAttributeLessCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeLessMongoDb(Attribute, Value);
+            return new AttributeLessMongoDb(Attribute, Value);
         }
 
-        private class BAttributeLessOrEqualMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeLessOrEqualMongoDb : DatabaseAttributeConditionMongo
         {
-            public BAttributeLessOrEqualMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLessOrEqual)
+            public AttributeLessOrEqualMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLessOrEqual)
             {
                 switch (Value.Type)
                 {
@@ -1021,12 +1065,12 @@ namespace CloudServiceUtilities.DatabaseServices
 
         public DatabaseAttributeCondition BuildAttributeLessOrEqualCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeLessOrEqualMongoDb(Attribute, Value);
+            return new AttributeLessOrEqualMongoDb(Attribute, Value);
         }
 
-        private class BAttributeNotEqualsConditionMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeNotEqualsConditionMongoDb : DatabaseAttributeConditionMongo
         {
-            public BAttributeNotEqualsConditionMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeNotEquals)
+            public AttributeNotEqualsConditionMongoDb(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeNotEquals)
             {
                 switch (Value.Type)
                 {
@@ -1049,21 +1093,21 @@ namespace CloudServiceUtilities.DatabaseServices
 
         public DatabaseAttributeCondition BuildAttributeNotEqualsCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeNotEqualsConditionMongoDb(Attribute, Value);
+            return new AttributeNotEqualsConditionMongoDb(Attribute, Value);
         }
 
-        private class BAttributeNotExistConditionMongoDb : DatabaseAttributeConditionMongo
+        private class AttributeNotExistConditionMongoDb : DatabaseAttributeConditionMongo
         {
-            public BAttributeNotExistConditionMongoDb(string Attribute) : base(EDatabaseAttributeConditionType.AttributeNotExist)
+            public AttributeNotExistConditionMongoDb(string Attribute) : base(EDatabaseAttributeConditionType.AttributeNotExist)
             {
-                Filter = Builders<BsonDocument>.Filter.Exists(Attribute, true /*Due to the implementation in UpdateItem, this has to be exists!*/);
+                Filter = Builders<BsonDocument>.Filter.Exists(Attribute, false/*Not*/);
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>(Attribute, null);
             }
         }
 
         public DatabaseAttributeCondition BuildAttributeNotExistCondition(string Attribute)
         {
-            return new BAttributeNotExistConditionMongoDb(Attribute);
+            return new AttributeNotExistConditionMongoDb(Attribute);
         }
 
         private JObject BsonToJObject(BsonDocument _Document)
@@ -1119,7 +1163,7 @@ namespace CloudServiceUtilities.DatabaseServices
             }
         }
 
-        private static bool Exists(IMongoCollection<BsonDocument> _Table, FilterDefinition<BsonDocument> _Filter)
+        private static bool HasTableMatchingResultWithFilter(IMongoCollection<BsonDocument> _Table, FilterDefinition<BsonDocument> _Filter)
         {
             try
             {

@@ -3,12 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using Newtonsoft.Json.Linq;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Datastore.V1;
 using Grpc.Auth;
-using Newtonsoft.Json.Linq;
 using CommonUtilities;
-using System.Threading;
 
 namespace CloudServiceUtilities.DatabaseServices
 {
@@ -552,158 +552,9 @@ namespace CloudServiceUtilities.DatabaseServices
                                 }
                             }
 
-                            var BuiltCondition = _ConditionExpression.GetBuiltCondition();
-                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals
-                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals
-                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreater
-                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreaterOrEqual
-                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLess
-                                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLessOrEqual)
+                            if (!ConditionCheck(ReturnedPreOperationObject, _KeyName, _ConditionExpression, _ErrorMessageAction))
                             {
-                                if (BuiltCondition.Item1 == null || BuiltCondition.Item2 == null || BuiltCondition.Item2.Item1 == null || BuiltCondition.Item2.Item2 == null)
-                                {
-                                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: Invalid condition expression.");
-                                    return false;
-                                }
-
-                                bool bConditionSatisfied = false;
-                                if (ReturnedPreOperationObject != null && ReturnedPreOperationObject.ContainsKey(BuiltCondition.Item1))
-                                {
-                                    switch (BuiltCondition.Item2.Item2.Type)
-                                    {
-                                        case EPrimitiveTypeEnum.Double:
-                                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals)
-                                            {
-                                                bConditionSatisfied = (double)ReturnedPreOperationObject[BuiltCondition.Item1] == BuiltCondition.Item2.Item2.AsDouble;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals)
-                                            {
-                                                bConditionSatisfied = (double)ReturnedPreOperationObject[BuiltCondition.Item1] != BuiltCondition.Item2.Item2.AsDouble;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreater)
-                                            {
-                                                bConditionSatisfied = (double)ReturnedPreOperationObject[BuiltCondition.Item1] > BuiltCondition.Item2.Item2.AsDouble;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
-                                            {
-                                                bConditionSatisfied = (double)ReturnedPreOperationObject[BuiltCondition.Item1] >= BuiltCondition.Item2.Item2.AsDouble;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLess)
-                                            {
-                                                bConditionSatisfied = (double)ReturnedPreOperationObject[BuiltCondition.Item1] < BuiltCondition.Item2.Item2.AsDouble;
-                                            }
-                                            else
-                                            {
-                                                bConditionSatisfied = (double)ReturnedPreOperationObject[BuiltCondition.Item1] <= BuiltCondition.Item2.Item2.AsDouble;
-                                            }
-                                            break;
-                                        case EPrimitiveTypeEnum.Integer:
-                                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals)
-                                            {
-                                                bConditionSatisfied = (long)ReturnedPreOperationObject[BuiltCondition.Item1] == BuiltCondition.Item2.Item2.AsInteger;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals)
-                                            {
-                                                bConditionSatisfied = (long)ReturnedPreOperationObject[BuiltCondition.Item1] != BuiltCondition.Item2.Item2.AsInteger;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreater)
-                                            {
-                                                bConditionSatisfied = (long)ReturnedPreOperationObject[BuiltCondition.Item1] > BuiltCondition.Item2.Item2.AsInteger;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
-                                            {
-                                                bConditionSatisfied = (long)ReturnedPreOperationObject[BuiltCondition.Item1] >= BuiltCondition.Item2.Item2.AsInteger;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLess)
-                                            {
-                                                bConditionSatisfied = (long)ReturnedPreOperationObject[BuiltCondition.Item1] < BuiltCondition.Item2.Item2.AsInteger;
-                                            }
-                                            else
-                                            {
-                                                bConditionSatisfied = (long)ReturnedPreOperationObject[BuiltCondition.Item1] <= BuiltCondition.Item2.Item2.AsInteger;
-                                            }
-                                            break;
-                                        case EPrimitiveTypeEnum.ByteArray:
-                                            var First = (string)ReturnedPreOperationObject[BuiltCondition.Item1];
-                                            var Second = Convert.ToBase64String(BuiltCondition.Item2.Item2.AsByteArray);
-
-                                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals)
-                                            {
-                                                bConditionSatisfied = First == Second;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals)
-                                            {
-                                                bConditionSatisfied = First != Second;
-                                            }
-                                            else
-                                            {
-                                                _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: Invalid condition expression.");
-                                                return false;
-                                            }
-                                            break;
-                                        default:
-                                            First = (string)ReturnedPreOperationObject[BuiltCondition.Item1];
-                                            Second = BuiltCondition.Item2.Item2.AsString;
-
-                                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals)
-                                            {
-                                                bConditionSatisfied = First == Second;
-                                            }
-                                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals)
-                                            {
-                                                bConditionSatisfied = First != Second;
-                                            }
-                                            else
-                                            {
-                                                _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: Invalid condition expression.");
-                                                return false;
-                                            }
-                                            break;
-                                    }
-                                }
-
-                                if (!bConditionSatisfied)
-                                {
-                                    return false;
-                                }
-                            }
-                            else
-                            {
-                                if (BuiltCondition.Item1 == null)
-                                {
-                                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: Invalid condition expression.");
-                                    return false;
-                                }
-
-                                bool bConditionSatisfied = false;
-
-                                if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotExist)
-                                {
-                                    bConditionSatisfied = true;
-
-                                    if (ReturnedPreOperationObject != null)
-                                    {
-                                        if (BuiltCondition.Item1 == _KeyName || ReturnedPreOperationObject.ContainsKey(BuiltCondition.Item1))
-                                        {
-                                            bConditionSatisfied = false;
-                                        }
-                                    }
-                                }
-                                else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeExists)
-                                {
-                                    if (ReturnedPreOperationObject != null)
-                                    {
-                                        if (BuiltCondition.Item1 == _KeyName || ReturnedPreOperationObject.ContainsKey(BuiltCondition.Item1))
-                                        {
-                                            bConditionSatisfied = true;
-                                        }
-                                    }
-                                }
-
-                                if (!bConditionSatisfied)
-                                {
-                                    return false;
-                                }
+                                return false;
                             }
                         }
 
@@ -1279,6 +1130,59 @@ namespace CloudServiceUtilities.DatabaseServices
             out List<JObject> _ReturnItem, 
             Action<string> _ErrorMessageAction = null)
         {
+            return Internal_ScanTable(
+                _Table,
+                (JObject _Param) => { return true; },
+                out _ReturnItem,
+                _ErrorMessageAction);
+        }
+
+        /// <summary>
+        /// 
+        /// <para>ScanTableFilterBy</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTable"/> for detailed documentation</para>
+        /// 
+        /// </summary>
+        public bool ScanTableFilterBy(
+            string _Table,
+            string[] _PossibleKeyNames,
+            DatabaseAttributeCondition _FilterBy,
+            out List<JObject> _ReturnItem,
+            Action<string> _ErrorMessageAction = null)
+        {
+            if (_FilterBy == null)
+            {
+                return ScanTable(_Table, _PossibleKeyNames, out _ReturnItem, _ErrorMessageAction);
+            }
+
+            if (!Internal_ScanTable(
+                _Table,
+                (JObject _Param) => 
+                {
+                    var bSucceeded = false;
+                    foreach (var PossibleKeyName in _PossibleKeyNames)
+                    {
+                        if (ConditionCheck(_Param, PossibleKeyName, _FilterBy, _ErrorMessageAction))
+                        {
+                            bSucceeded = true; 
+                            break;
+                        }
+                    }
+                    return bSucceeded;
+                },
+                out _ReturnItem,
+                _ErrorMessageAction))
+            {
+                _ErrorMessageAction?.Invoke($"DatabaseServiceGC->ScanTableFilterBy: ScanTable operation has failed.");
+                _ReturnItem = null;
+                return false;
+            }
+            return true;
+        }
+
+        private bool Internal_ScanTable(string _Table, Func<JObject, bool> _FilterCallback, out List<JObject> _ReturnItem, Action<string> _ErrorMessageAction = null)
+        {
             DatastoreQueryResults QueryResult = null;
             try
             {
@@ -1292,6 +1196,7 @@ namespace CloudServiceUtilities.DatabaseServices
             }
 
             _ReturnItem = new List<JObject>();
+
             if (QueryResult != null)
             {
                 foreach (var Current in QueryResult.Entities)
@@ -1312,9 +1217,12 @@ namespace CloudServiceUtilities.DatabaseServices
                             }
 
                             AddKeyToJson(AsJson, KeyName, new PrimitiveType(KeyValue));
-                            Utility.SortJObject(AsJson, true);
+                            if (_FilterCallback(AsJson))
+                            {
+                                Utility.SortJObject(AsJson, true);
 
-                            _ReturnItem.Add(AsJson);
+                                _ReturnItem.Add(AsJson);
+                            }
                         }
                     }
                 }
@@ -1322,9 +1230,171 @@ namespace CloudServiceUtilities.DatabaseServices
             return true;
         }
 
-        private class BAttributeEqualsConditionDatastore : DatabaseAttributeCondition
+        private bool ConditionCheck(
+            JObject _JObjectToCheck,
+            string _KeyName,
+            DatabaseAttributeCondition _ConditionExpression,
+            Action<string> _ErrorMessageAction = null)
         {
-            public BAttributeEqualsConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeEquals)
+            var BuiltCondition = _ConditionExpression.GetBuiltCondition();
+            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals
+                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals
+                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreater
+                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreaterOrEqual
+                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLess
+                || _ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLessOrEqual)
+            {
+                if (BuiltCondition.Item1 == null || BuiltCondition.Item2 == null || BuiltCondition.Item2.Item1 == null || BuiltCondition.Item2.Item2 == null)
+                {
+                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->ConditionCheck: Invalid condition expression.");
+                    return false;
+                }
+
+                bool bConditionSatisfied = false;
+                if (_JObjectToCheck != null && _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
+                {
+                    switch (BuiltCondition.Item2.Item2.Type)
+                    {
+                        case EPrimitiveTypeEnum.Double:
+                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals)
+                            {
+                                bConditionSatisfied = (double)_JObjectToCheck[BuiltCondition.Item1] == BuiltCondition.Item2.Item2.AsDouble;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals)
+                            {
+                                bConditionSatisfied = (double)_JObjectToCheck[BuiltCondition.Item1] != BuiltCondition.Item2.Item2.AsDouble;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreater)
+                            {
+                                bConditionSatisfied = (double)_JObjectToCheck[BuiltCondition.Item1] > BuiltCondition.Item2.Item2.AsDouble;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
+                            {
+                                bConditionSatisfied = (double)_JObjectToCheck[BuiltCondition.Item1] >= BuiltCondition.Item2.Item2.AsDouble;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLess)
+                            {
+                                bConditionSatisfied = (double)_JObjectToCheck[BuiltCondition.Item1] < BuiltCondition.Item2.Item2.AsDouble;
+                            }
+                            else
+                            {
+                                bConditionSatisfied = (double)_JObjectToCheck[BuiltCondition.Item1] <= BuiltCondition.Item2.Item2.AsDouble;
+                            }
+                            break;
+                        case EPrimitiveTypeEnum.Integer:
+                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals)
+                            {
+                                bConditionSatisfied = (long)_JObjectToCheck[BuiltCondition.Item1] == BuiltCondition.Item2.Item2.AsInteger;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals)
+                            {
+                                bConditionSatisfied = (long)_JObjectToCheck[BuiltCondition.Item1] != BuiltCondition.Item2.Item2.AsInteger;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreater)
+                            {
+                                bConditionSatisfied = (long)_JObjectToCheck[BuiltCondition.Item1] > BuiltCondition.Item2.Item2.AsInteger;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
+                            {
+                                bConditionSatisfied = (long)_JObjectToCheck[BuiltCondition.Item1] >= BuiltCondition.Item2.Item2.AsInteger;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeLess)
+                            {
+                                bConditionSatisfied = (long)_JObjectToCheck[BuiltCondition.Item1] < BuiltCondition.Item2.Item2.AsInteger;
+                            }
+                            else
+                            {
+                                bConditionSatisfied = (long)_JObjectToCheck[BuiltCondition.Item1] <= BuiltCondition.Item2.Item2.AsInteger;
+                            }
+                            break;
+                        case EPrimitiveTypeEnum.ByteArray:
+                            var First = (string)_JObjectToCheck[BuiltCondition.Item1];
+                            var Second = Convert.ToBase64String(BuiltCondition.Item2.Item2.AsByteArray);
+
+                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals)
+                            {
+                                bConditionSatisfied = First == Second;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals)
+                            {
+                                bConditionSatisfied = First != Second;
+                            }
+                            else
+                            {
+                                _ErrorMessageAction?.Invoke("DatabaseServiceGC->ConditionCheck: Invalid condition expression.");
+                                return false;
+                            }
+                            break;
+                        default:
+                            First = (string)_JObjectToCheck[BuiltCondition.Item1];
+                            Second = BuiltCondition.Item2.Item2.AsString;
+
+                            if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeEquals)
+                            {
+                                bConditionSatisfied = First == Second;
+                            }
+                            else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotEquals)
+                            {
+                                bConditionSatisfied = First != Second;
+                            }
+                            else
+                            {
+                                _ErrorMessageAction?.Invoke("DatabaseServiceGC->ConditionCheck: Invalid condition expression.");
+                                return false;
+                            }
+                            break;
+                    }
+                }
+
+                if (!bConditionSatisfied)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (BuiltCondition.Item1 == null)
+                {
+                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->ConditionCheck: Invalid condition expression.");
+                    return false;
+                }
+
+                bool bConditionSatisfied = false;
+
+                if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeNotExist)
+                {
+                    bConditionSatisfied = true;
+
+                    if (_JObjectToCheck != null)
+                    {
+                        if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
+                        {
+                            bConditionSatisfied = false;
+                        }
+                    }
+                }
+                else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeExists)
+                {
+                    if (_JObjectToCheck != null)
+                    {
+                        if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
+                        {
+                            bConditionSatisfied = true;
+                        }
+                    }
+                }
+
+                if (!bConditionSatisfied)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private class AttributeEqualsConditionDatastore : DatabaseAttributeCondition
+        {
+            public AttributeEqualsConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeEquals)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1335,12 +1405,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeEqualsCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeEqualsConditionDatastore(Attribute, Value);
+            return new AttributeEqualsConditionDatastore(Attribute, Value);
         }
 
-        private class BAttributeNotEqualsConditionDatastore : DatabaseAttributeCondition
+        private class AttributeNotEqualsConditionDatastore : DatabaseAttributeCondition
         {
-            public BAttributeNotEqualsConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeNotEquals)
+            public AttributeNotEqualsConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeNotEquals)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1351,12 +1421,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeNotEqualsCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeNotEqualsConditionDatastore(Attribute, Value);
+            return new AttributeNotEqualsConditionDatastore(Attribute, Value);
         }
 
-        private class BAttributeGreaterConditionDatastore : DatabaseAttributeCondition
+        private class AttributeGreaterConditionDatastore : DatabaseAttributeCondition
         {
-            public BAttributeGreaterConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreater)
+            public AttributeGreaterConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreater)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1367,12 +1437,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeGreaterCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeGreaterConditionDatastore(Attribute, Value);
+            return new AttributeGreaterConditionDatastore(Attribute, Value);
         }
 
-        private class BAttributeGreaterOrEqualConditionDatastore : DatabaseAttributeCondition
+        private class AttributeGreaterOrEqualConditionDatastore : DatabaseAttributeCondition
         {
-            public BAttributeGreaterOrEqualConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
+            public AttributeGreaterOrEqualConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeGreaterOrEqual)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1383,12 +1453,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeGreaterOrEqualCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeGreaterOrEqualConditionDatastore(Attribute, Value);
+            return new AttributeGreaterOrEqualConditionDatastore(Attribute, Value);
         }
 
-        private class BAttributeLessConditionDatastore : DatabaseAttributeCondition
+        private class AttributeLessConditionDatastore : DatabaseAttributeCondition
         {
-            public BAttributeLessConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLess)
+            public AttributeLessConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLess)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1399,12 +1469,12 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeLessCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeLessConditionDatastore(Attribute, Value);
+            return new AttributeLessConditionDatastore(Attribute, Value);
         }
 
-        private class BAttributeLessOrEqualConditionDatastore : DatabaseAttributeCondition
+        private class AttributeLessOrEqualConditionDatastore : DatabaseAttributeCondition
         {
-            public BAttributeLessOrEqualConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLessOrEqual)
+            public AttributeLessOrEqualConditionDatastore(string Attribute, PrimitiveType Value) : base(EDatabaseAttributeConditionType.AttributeLessOrEqual)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>
                 (
@@ -1415,31 +1485,31 @@ namespace CloudServiceUtilities.DatabaseServices
         }
         public DatabaseAttributeCondition BuildAttributeLessOrEqualCondition(string Attribute, PrimitiveType Value)
         {
-            return new BAttributeLessOrEqualConditionDatastore(Attribute, Value);
+            return new AttributeLessOrEqualConditionDatastore(Attribute, Value);
         }
 
-        private class BAttributeExistsConditionDatastore : DatabaseAttributeCondition
+        private class AttributeExistsConditionDatastore : DatabaseAttributeCondition
         {
-            public BAttributeExistsConditionDatastore(string Attribute) : base(EDatabaseAttributeConditionType.AttributeExists)
+            public AttributeExistsConditionDatastore(string Attribute) : base(EDatabaseAttributeConditionType.AttributeExists)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>(Attribute, null);
             }
         }
         public DatabaseAttributeCondition BuildAttributeExistsCondition(string Attribute)
         {
-            return new BAttributeExistsConditionDatastore(Attribute);
+            return new AttributeExistsConditionDatastore(Attribute);
         }
 
-        private class BAttributeNotExistConditionDatastore : DatabaseAttributeCondition
+        private class AttributeNotExistConditionDatastore : DatabaseAttributeCondition
         {
-            public BAttributeNotExistConditionDatastore(string Attribute) : base(EDatabaseAttributeConditionType.AttributeNotExist)
+            public AttributeNotExistConditionDatastore(string Attribute) : base(EDatabaseAttributeConditionType.AttributeNotExist)
             {
                 BuiltCondition = new Tuple<string, Tuple<string, PrimitiveType>>(Attribute, null);
             }
         }
         public DatabaseAttributeCondition BuildAttributeNotExistCondition(string Attribute)
         {
-            return new BAttributeNotExistConditionDatastore(Attribute);
+            return new AttributeNotExistConditionDatastore(Attribute);
         }
 
         private class BArrayElementNotExistConditionDatastore : DatabaseAttributeCondition

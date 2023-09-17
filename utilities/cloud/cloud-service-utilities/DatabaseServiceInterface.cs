@@ -342,5 +342,28 @@ namespace CloudServiceUtilities
             string[] _PossibleKeyNames,
             out List<Newtonsoft.Json.Linq.JObject> _ReturnItem,
             Action<string> _ErrorMessageAction = null);
+
+        /// <summary>
+        /// 
+        /// <para>ScanTableFilterBy</para>
+        /// 
+        /// <para>Scans the table for attribute specified by _Key, filtered by the _FilterBy condition</para>
+        /// 
+        /// <para>Parameters:</para>
+        /// <para><paramref name="_Table"/>                 Table name</para>
+        /// <para><paramref name="_PossibleKeyNames"/>      Names of the keys in table</para
+        /// <para><paramref name="_FilterBy"/>              Filter each item to be returned by the scan operation</para>
+        /// <para><paramref name="_ReturnItem"/>            In case item exists, fills his variable with returned item</para>
+        /// <para><paramref name="_ErrorMessageAction"/>    Error messages will be pushed to this action</para>
+        /// 
+        /// <returns> Returns:                              Operation success</returns>
+        /// 
+        /// </summary>
+        bool ScanTableFilterBy(
+            string _Table,
+            string[] _PossibleKeyNames,
+            DatabaseAttributeCondition _FilterBy,
+            out List<Newtonsoft.Json.Linq.JObject> _ReturnItem,
+            Action<string> _ErrorMessageAction = null);
     }
 }
