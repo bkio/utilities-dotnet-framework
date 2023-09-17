@@ -227,7 +227,13 @@ namespace CloudServiceUtilities.DatabaseServices
         /// <para>Check <seealso cref="IDatabaseServiceInterface.GetItem"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool GetItem(string _Table, string _KeyName, PrimitiveType _KeyValue, string[] _ValuesToGet, out JObject _Result, Action<string> _ErrorMessageAction = null)
+        public bool GetItem(
+            string _Table, 
+            string _KeyName, 
+            PrimitiveType _KeyValue, 
+            string[] _ValuesToGet, 
+            out JObject _Result, 
+            Action<string> _ErrorMessageAction = null)
         {
             _Result = null;
 
@@ -348,7 +354,15 @@ namespace CloudServiceUtilities.DatabaseServices
         /// <para>Check <seealso cref="IDatabaseServiceInterface.PutItem"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool PutItem(string _Table, string _KeyName, PrimitiveType _KeyValue, JObject _PutItem, out JObject _ReturnItem, EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, DatabaseAttributeCondition _ConditionExpression = null, Action<string> _ErrorMessageAction = null)
+        public bool PutItem(
+            string _Table, 
+            string _KeyName, 
+            PrimitiveType _KeyValue, 
+            JObject _PutItem, 
+            out JObject _ReturnItem,
+            EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, 
+            DatabaseAttributeCondition _ConditionExpression = null,
+            Action<string> _ErrorMessageAction = null)
         {
             return UpdateItem(_Table, _KeyName, _KeyValue, _PutItem, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, _ErrorMessageAction);
         }
@@ -362,7 +376,15 @@ namespace CloudServiceUtilities.DatabaseServices
         /// <para>Check <seealso cref="IDatabaseServiceInterface.UpdateItem"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool UpdateItem(string _Table, string _KeyName, PrimitiveType _KeyValue, JObject _UpdateItem, out JObject _ReturnItem, EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, DatabaseAttributeCondition _ConditionExpression = null, Action<string> _ErrorMessageAction = null)
+        public bool UpdateItem(
+            string _Table, 
+            string _KeyName, 
+            PrimitiveType _KeyValue,
+            JObject _UpdateItem, 
+            out JObject _ReturnItem,
+            EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, 
+            DatabaseAttributeCondition _ConditionExpression = null, 
+            Action<string> _ErrorMessageAction = null)
         {
             _ReturnItem = null;
 
@@ -433,17 +455,36 @@ namespace CloudServiceUtilities.DatabaseServices
         /// <para>Check <seealso cref="IDatabaseServiceInterface.DeleteItem"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool DeleteItem(string _Table, string _KeyName, PrimitiveType _KeyValue, out JObject _ReturnItem, EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, Action<string> _ErrorMessageAction = null)
+        public bool DeleteItem(
+            string _Table, 
+            string _KeyName, 
+            PrimitiveType _KeyValue, 
+            out JObject _ReturnItem, 
+            EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
+            DatabaseAttributeCondition _ConditionExpression = null,
+            Action<string> _ErrorMessageAction = null)
         {
             _ReturnItem = null;
 
             var Table = GetTable(_Table);
             if (Table == null) return false;
 
-            var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
-
             try
             {
+                var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+
+                if (_ConditionExpression != null)
+                {
+                    var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                    var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
+
+                    if (!HasTableMatchingResultWithFilter(Table, FinalFilter))
+                    {
+                        //Condition failed.
+                        return false;
+                    }
+                }
+
                 if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld)
                 {
                     var Document = FindOne(Table, Filter);
@@ -477,7 +518,16 @@ namespace CloudServiceUtilities.DatabaseServices
         /// <para>Check <seealso cref="IDatabaseServiceInterface.AddElementsToArrayItem"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool AddElementsToArrayItem(string _Table, string _KeyName, PrimitiveType _KeyValue, string _ElementName, PrimitiveType[] _ElementValueEntries, out JObject _ReturnItem, EReturnItemBehaviour _ReturnItemBehaviour, DatabaseAttributeCondition _ConditionExpression, Action<string> _ErrorMessageAction)
+        public bool AddElementsToArrayItem(
+            string _Table, 
+            string _KeyName, 
+            PrimitiveType _KeyValue, 
+            string _ElementName, 
+            PrimitiveType[] _ElementValueEntries, 
+            out JObject _ReturnItem, 
+            EReturnItemBehaviour _ReturnItemBehaviour,
+            DatabaseAttributeCondition _ConditionExpression, 
+            Action<string> _ErrorMessageAction)
         {
             _ReturnItem = null;
 
@@ -512,11 +562,12 @@ namespace CloudServiceUtilities.DatabaseServices
             {
                 if (_ConditionExpression != null)
                 {
-                    var FirstCondition = (_ConditionExpression as AttributeArrayElementNotExistConditionMongoDb).GetArrayElementFilter();
-                    var FinalCondition = Builders<BsonDocument>.Filter.And(Filter, FirstCondition);
+                    var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                    var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
 
-                    if (!HasTableMatchingResultWithFilter(Table, FinalCondition))
+                    if (!HasTableMatchingResultWithFilter(Table, FinalFilter))
                     {
+                        //Condition failed.
                         return false;
                     }
                 }
@@ -595,7 +646,8 @@ namespace CloudServiceUtilities.DatabaseServices
             string _ElementName, 
             PrimitiveType[] _ElementValueEntries, 
             out JObject _ReturnItem, 
-            EReturnItemBehaviour _ReturnItemBehaviour, 
+            EReturnItemBehaviour _ReturnItemBehaviour,
+            DatabaseAttributeCondition _ConditionExpression,
             Action<string> _ErrorMessageAction)
         {
             _ReturnItem = null;
@@ -625,8 +677,19 @@ namespace CloudServiceUtilities.DatabaseServices
             var Table = GetTable(_Table);
             if (Table == null) return false;
 
-            var Filter = Builders<BsonDocument>
-             .Filter.Eq(_KeyName, _KeyValue.ToString());
+            var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+
+            if (_ConditionExpression != null)
+            {
+                var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
+
+                if (!HasTableMatchingResultWithFilter(Table, FinalFilter))
+                {
+                    //Condition failed.
+                    return false;
+                }
+            }
 
             List<object> TempList = new List<object>();
 
@@ -697,15 +760,35 @@ namespace CloudServiceUtilities.DatabaseServices
         /// <para>Check <seealso cref="IDatabaseServiceInterface.IncrementOrDecrementItemValue"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool IncrementOrDecrementItemValue(string _Table, string _KeyName, PrimitiveType _KeyValue, out double _NewValue, string _ValueAttribute, double _IncrementOrDecrementBy, bool _bDecrement = false, Action<string> _ErrorMessageAction = null)
+        public bool IncrementOrDecrementItemValue(
+            string _Table, 
+            string _KeyName, 
+            PrimitiveType _KeyValue, 
+            out double _NewValue, 
+            string _ValueAttribute, 
+            double _IncrementOrDecrementBy, 
+            bool _bDecrement = false,
+            DatabaseAttributeCondition _ConditionExpression = null,
+            Action<string> _ErrorMessageAction = null)
         {
             _NewValue = 0.0f;
 
             var Table = GetTable(_Table);
             if (Table == null) return false;
 
-            var Filter = Builders<BsonDocument>
-                .Filter.Eq(_KeyName, _KeyValue.ToString());
+            var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+
+            if (_ConditionExpression != null)
+            {
+                var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
+
+                if (!HasTableMatchingResultWithFilter(Table, FinalFilter))
+                {
+                    //Condition failed.
+                    return false;
+                }
+            }
 
             UpdateDefinition<BsonDocument> Update;
 
@@ -745,7 +828,11 @@ namespace CloudServiceUtilities.DatabaseServices
         /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTable"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool ScanTable(string _Table, string[] _PossibleKeyNames, out List<JObject> _ReturnItem, Action<string> _ErrorMessageAction = null)
+        public bool ScanTable(
+            string _Table, 
+            string[] _PossibleKeyNames, 
+            out List<JObject> _ReturnItem, 
+            Action<string> _ErrorMessageAction = null)
         {
             _ReturnItem = null;
 
@@ -893,32 +980,23 @@ namespace CloudServiceUtilities.DatabaseServices
 
         private class AttributeArrayElementExistConditionMongoDb : DatabaseAttributeConditionMongo
         {
-            private readonly string Attribute;
-            private readonly PrimitiveType ArrayElement;
             public AttributeArrayElementExistConditionMongoDb(string _Attribute, PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementExist)
             {
-                Attribute = _Attribute;
-                ArrayElement = _ArrayElement;
-            }
-
-            public FilterDefinition<BsonDocument> GetArrayElementFilter()
-            {
-                switch (ArrayElement.Type)
+                switch (_ArrayElement.Type)
                 {
                     case EPrimitiveTypeEnum.Double:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(Attribute, new double[] { ArrayElement.AsDouble });
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(_Attribute, new double[] { _ArrayElement.AsDouble });
                         break;
                     case EPrimitiveTypeEnum.Integer:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(Attribute, new long[] { ArrayElement.AsInteger });
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(_Attribute, new long[] { _ArrayElement.AsInteger });
                         break;
                     case EPrimitiveTypeEnum.ByteArray:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(Attribute, new byte[][] { ArrayElement.AsByteArray });
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(_Attribute, new byte[][] { _ArrayElement.AsByteArray });
                         break;
                     case EPrimitiveTypeEnum.String:
-                        Filter = Builders<BsonDocument>.Filter.AnyIn(Attribute, new string[] { ArrayElement.AsString });
+                        Filter = Builders<BsonDocument>.Filter.AnyIn(_Attribute, new string[] { _ArrayElement.AsString });
                         break;
                 }
-                return Filter;
             }
         }
 
@@ -929,32 +1007,23 @@ namespace CloudServiceUtilities.DatabaseServices
 
         private class AttributeArrayElementNotExistConditionMongoDb : DatabaseAttributeConditionMongo
         {
-            private readonly string Attribute;
-            private readonly PrimitiveType ArrayElement;
             public AttributeArrayElementNotExistConditionMongoDb(string _Attribute, PrimitiveType _ArrayElement) : base(EDatabaseAttributeConditionType.ArrayElementNotExist)
             {
-                Attribute = _Attribute;
-                ArrayElement = _ArrayElement;
-            }
-
-            public FilterDefinition<BsonDocument> GetArrayElementFilter()
-            {
-                switch (ArrayElement.Type)
+                switch (_ArrayElement.Type)
                 {
                     case EPrimitiveTypeEnum.Double:
-                        Filter = Builders<BsonDocument>.Filter.AnyNin(Attribute, new double[] { ArrayElement.AsDouble });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(_Attribute, new double[] { _ArrayElement.AsDouble });
                         break;
                     case EPrimitiveTypeEnum.Integer:
-                        Filter = Builders<BsonDocument>.Filter.AnyNin(Attribute, new long[] { ArrayElement.AsInteger });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(_Attribute, new long[] { _ArrayElement.AsInteger });
                         break;
                     case EPrimitiveTypeEnum.ByteArray:
-                        Filter = Builders<BsonDocument>.Filter.AnyNin(Attribute, new byte[][] { ArrayElement.AsByteArray });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(_Attribute, new byte[][] { _ArrayElement.AsByteArray });
                         break;
                     case EPrimitiveTypeEnum.String:
-                        Filter = Builders<BsonDocument>.Filter.AnyNin(Attribute, new string[] { ArrayElement.AsString });
+                        Filter = Builders<BsonDocument>.Filter.AnyNin(_Attribute, new string[] { _ArrayElement.AsString });
                         break;
                 }
-                return Filter;
             }
         }
 

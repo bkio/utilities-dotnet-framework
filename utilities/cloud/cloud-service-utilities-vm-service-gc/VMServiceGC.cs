@@ -143,10 +143,10 @@ namespace CloudServiceUtilities.VMServices
             int _GpuCount,
             string _GpuName,
             string _OSSourceImageURL,
-            EBVMDiskType _DiskType,
-            EBVMOSType _OSType,
+            EVMDiskType _DiskType,
+            EVMOSType _OSType,
             IDictionary<string, string> _Labels,
-            BVMNetworkFirewall _FirewallSettings,
+            VMNetworkFirewall _FirewallSettings,
             string _OptionalStartupScript,
             out int _ErrorCode,
             Action<string> _ErrorMessageAction = null)
@@ -185,7 +185,7 @@ namespace CloudServiceUtilities.VMServices
                                 InitializeParams = new AttachedDiskInitializeParams()
                                 {
                                     SourceImage = _OSSourceImageURL,
-                                    DiskType = $"projects/{ ProjectID}/zones/{ZoneName}/diskTypes/{(_DiskType == EBVMDiskType.SSD ? "pd-ssd" : "pd-standard")}",
+                                    DiskType = $"projects/{ ProjectID}/zones/{ZoneName}/diskTypes/{(_DiskType == EVMDiskType.SSD ? "pd-ssd" : "pd-standard")}",
                                     DiskSizeGb = _DiskSizeGB
                                 },
                                 Type = "PERSISTENT"
@@ -241,7 +241,7 @@ namespace CloudServiceUtilities.VMServices
                     {
                         NewInstance.Metadata.Items.Add(new Metadata.ItemsData()
                         {
-                            Key = _OSType == EBVMOSType.Linux ? "startup-script" : "windows-startup-script-ps1",
+                            Key = _OSType == EVMOSType.Linux ? "startup-script" : "windows-startup-script-ps1",
                             Value = _OptionalStartupScript
                         });
                     }
@@ -260,7 +260,7 @@ namespace CloudServiceUtilities.VMServices
                             });
                     }
 
-                    if (_OSType == EBVMOSType.Windows)
+                    if (_OSType == EVMOSType.Windows)
                     {
                         if (NewInstance.Disks[0].GuestOsFeatures == null)
                         {
@@ -311,9 +311,9 @@ namespace CloudServiceUtilities.VMServices
                         foreach (var Current in _FirewallSettings.OpenPorts)
                         {
                             string[] OpenFor;
-                            if (Current.OpenFor == BVMNetworkFirewall.EVMNetworkFirewallPortProtocol.TCP)
+                            if (Current.OpenFor == VMNetworkFirewall.EVMNetworkFirewallPortProtocol.TCP)
                                 OpenFor = new string[] { "tcp" };
-                            else if (Current.OpenFor == BVMNetworkFirewall.EVMNetworkFirewallPortProtocol.UDP)
+                            else if (Current.OpenFor == VMNetworkFirewall.EVMNetworkFirewallPortProtocol.UDP)
                                 OpenFor = new string[] { "udp" };
                             else
                                 OpenFor = new string[] { "tcp", "udp" };
@@ -498,41 +498,41 @@ namespace CloudServiceUtilities.VMServices
             return Result;
         }
 
-        public EBVMInstanceStatus GetStatusFromString(string _Status)
+        public EVMInstanceStatus GetStatusFromString(string _Status)
         {
             if (_Status == "RUNNING")
             {
-                return EBVMInstanceStatus.Running;
+                return EVMInstanceStatus.Running;
             }
             else if (_Status == "STOPPED" || _Status == "TERMINATED" || _Status == "SUSPENDED")
             {
-                return EBVMInstanceStatus.Stopped;
+                return EVMInstanceStatus.Stopped;
             }
             else if (_Status == "PROVISIONING" || _Status == "STAGING")
             {
-                return EBVMInstanceStatus.PreparingToRun;
+                return EVMInstanceStatus.PreparingToRun;
             }
             else if (_Status == "STOPPING" || _Status == "SUSPENDING")
             {
-                return EBVMInstanceStatus.Stopping;
+                return EVMInstanceStatus.Stopping;
             }
-            return EBVMInstanceStatus.None;
+            return EVMInstanceStatus.None;
         }
 
         public bool GetInstanceStatus(
             string _UniqueInstanceName,
-            out EBVMInstanceStatus _Status,
+            out EVMInstanceStatus _Status,
             Action<string> _ErrorMessageAction = null)
         {
-            _Status = EBVMInstanceStatus.None;
+            _Status = EVMInstanceStatus.None;
 
             Instance FoundInstance = FindInstanceByUniqueName(_UniqueInstanceName, _ErrorMessageAction);
             if (FoundInstance != null)
             {
                 _Status = GetStatusFromString(FoundInstance.Status);
-                if (_Status == EBVMInstanceStatus.None)
+                if (_Status == EVMInstanceStatus.None)
                 {
-                    _Status = EBVMInstanceStatus.None;
+                    _Status = EVMInstanceStatus.None;
                     _ErrorMessageAction?.Invoke($"VMServiceGC->GetInstanceStatus: Unexpected instance status: { FoundInstance.Status}");
                     return false;
                 }
@@ -546,9 +546,9 @@ namespace CloudServiceUtilities.VMServices
         private readonly Dictionary<int, Stack<object>> ProgressStacks = new Dictionary<int, Stack<object>>();
         private readonly object ProgressStacks_Lock = new object();
 
-        //EBVMInstanceStatus is the condition in here
+        //EVMInstanceStatus is the condition in here
         private int PerformActionOnInstances(
-            Tuple<string, EBVMInstanceAction, EBVMInstanceStatus>[] _Operations,
+            Tuple<string, EVMInstanceAction, EVMInstanceStatus>[] _Operations,
             Action _OnCompleted,
             Action _OnFailure,
             Action<string> _ErrorMessageAction = null)
@@ -575,15 +575,15 @@ namespace CloudServiceUtilities.VMServices
                         if (GetStatusFromString(FoundInstance.Status) == _Operation.Item3)
                         {
                             IClientServiceRequest RequestAction = null;
-                            if (_Operation.Item2 == EBVMInstanceAction.Start)
+                            if (_Operation.Item2 == EVMInstanceAction.Start)
                             {
                                 RequestAction = Service.Instances.Start(ProjectID, ZoneName, FoundInstance.Name);
                             }
-                            else if (_Operation.Item2 == EBVMInstanceAction.Stop)
+                            else if (_Operation.Item2 == EVMInstanceAction.Stop)
                             {
                                 RequestAction = Service.Instances.Stop(ProjectID, ZoneName, FoundInstance.Name);
                             }
-                            else if (_Operation.Item2 == EBVMInstanceAction.Restart)
+                            else if (_Operation.Item2 == EVMInstanceAction.Restart)
                             {
                                 RequestAction = Service.Instances.Reset(ProjectID, ZoneName, FoundInstance.Name);
                             }
@@ -655,31 +655,31 @@ namespace CloudServiceUtilities.VMServices
 
         private bool StartStopRestartInstances(
             string[] _UniqueInstanceNames,
-            EBVMInstanceAction _Action,
+            EVMInstanceAction _Action,
             Action _OnCompleted,
             Action _OnFailure,
             Action<string> _ErrorMessageAction = null)
         {
             if (_UniqueInstanceNames != null && _UniqueInstanceNames.Length > 0)
             {
-                var Actions = new Tuple<string, EBVMInstanceAction, EBVMInstanceStatus>[_UniqueInstanceNames.Length];
+                var Actions = new Tuple<string, EVMInstanceAction, EVMInstanceStatus>[_UniqueInstanceNames.Length];
 
-                EBVMInstanceStatus ConditionStatus = EBVMInstanceStatus.None;
+                EVMInstanceStatus ConditionStatus = EVMInstanceStatus.None;
                 switch (_Action)
                 {
-                    case EBVMInstanceAction.Start:
-                        ConditionStatus = EBVMInstanceStatus.Stopped;
+                    case EVMInstanceAction.Start:
+                        ConditionStatus = EVMInstanceStatus.Stopped;
                         break;
-                    case EBVMInstanceAction.Stop:
-                    case EBVMInstanceAction.Restart:
-                        ConditionStatus = EBVMInstanceStatus.Running;
+                    case EVMInstanceAction.Stop:
+                    case EVMInstanceAction.Restart:
+                        ConditionStatus = EVMInstanceStatus.Running;
                         break;
                 }
 
                 int i = 0;
                 foreach (var _Name in _UniqueInstanceNames)
                 {
-                    Actions[i++] = new Tuple<string, EBVMInstanceAction, EBVMInstanceStatus>(
+                    Actions[i++] = new Tuple<string, EVMInstanceAction, EVMInstanceStatus>(
                         _Name,
                         _Action,
                         ConditionStatus);
@@ -695,7 +695,7 @@ namespace CloudServiceUtilities.VMServices
             Action _OnFailure,
             Action<string> _ErrorMessageAction = null)
         {
-            return StartStopRestartInstances(_UniqueInstanceNames, EBVMInstanceAction.Start, _OnCompleted, _OnFailure, _ErrorMessageAction);
+            return StartStopRestartInstances(_UniqueInstanceNames, EVMInstanceAction.Start, _OnCompleted, _OnFailure, _ErrorMessageAction);
         }
 
         public bool StopInstances(
@@ -704,7 +704,7 @@ namespace CloudServiceUtilities.VMServices
             Action _OnFailure,
             Action<string> _ErrorMessageAction = null)
         {
-            return StartStopRestartInstances(_UniqueInstanceNames, EBVMInstanceAction.Stop, _OnCompleted, _OnFailure, _ErrorMessageAction);
+            return StartStopRestartInstances(_UniqueInstanceNames, EVMInstanceAction.Stop, _OnCompleted, _OnFailure, _ErrorMessageAction);
         }
 
         public bool RestartInstances(
@@ -713,17 +713,17 @@ namespace CloudServiceUtilities.VMServices
             Action _OnFailure,
             Action<string> _ErrorMessageAction = null)
         {
-            return StartStopRestartInstances(_UniqueInstanceNames, EBVMInstanceAction.Restart, _OnCompleted, _OnFailure, _ErrorMessageAction);
+            return StartStopRestartInstances(_UniqueInstanceNames, EVMInstanceAction.Restart, _OnCompleted, _OnFailure, _ErrorMessageAction);
         }
 
         public bool WaitUntilInstanceStatus(
             string _UniqueInstanceName,
-            EBVMInstanceStatus[] _OrStatus,
+            EVMInstanceStatus[] _OrStatus,
             Action<string> _ErrorMessageAction = null)
         {
-            EBVMInstanceStatus CurrentInstanceStatus = EBVMInstanceStatus.None;
+            EVMInstanceStatus CurrentInstanceStatus = EVMInstanceStatus.None;
 
-            List<EBVMInstanceStatus> Conditions = new List<EBVMInstanceStatus>(_OrStatus);
+            List<EVMInstanceStatus> Conditions = new List<EVMInstanceStatus>(_OrStatus);
 
             int LocalErrorRetryCount = 0;
             do
@@ -752,7 +752,7 @@ namespace CloudServiceUtilities.VMServices
         }
         private bool ThreadSleep(int _MS) { Thread.Sleep(_MS); return true; }
 
-        public bool RunCommand(string[] _UniqueInstanceNames, EBVMOSType _VMOperationSystemType, string[] _Commands, Action _OnCompleted, Action _OnFailure, Action<string> _ErrorMessageAction = null)
+        public bool RunCommand(string[] _UniqueInstanceNames, EVMOSType _VMOperationSystemType, string[] _Commands, Action _OnCompleted, Action _OnFailure, Action<string> _ErrorMessageAction = null)
         {
             throw new NotImplementedException();
         }

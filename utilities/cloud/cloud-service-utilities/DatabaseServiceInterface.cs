@@ -237,9 +237,9 @@ namespace CloudServiceUtilities
             string _ElementName,
             PrimitiveType[] _ElementValueEntries, 
             out Newtonsoft.Json.Linq.JObject _ReturnItem, 
-            EReturnItemBehaviour _ReturnItemBehaviour, 
-            DatabaseAttributeCondition _ConditionExpression, 
-            Action<string> _ErrorMessageAction);
+            EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, 
+            DatabaseAttributeCondition _ConditionExpression = null, 
+            Action<string> _ErrorMessageAction = null);
 
         /// <summary>
         /// 
@@ -255,6 +255,7 @@ namespace CloudServiceUtilities
         /// <para><paramref name="_ElementValueEntries"/>       Items to be removed from array element</para>
         /// <para><paramref name="_ReturnItem"/>                In case item exists, fills his variable with returned item</para>
         /// <para><paramref name="_ReturnItemBehaviour"/>       In case item exists, defines what service shall return</para>
+        /// <para><paramref name="_ConditionExpression"/>           Condition expression to be performed remotely</para>
         /// <para><paramref name="_ErrorMessageAction"/>        Error messages will be pushed to this action</para>
         /// 
         /// <returns> Returns:                                  Operation success</returns>
@@ -267,8 +268,9 @@ namespace CloudServiceUtilities
             string _ElementName,
             PrimitiveType[] _ElementValueEntries,
             out Newtonsoft.Json.Linq.JObject _ReturnItem,
-            EReturnItemBehaviour _ReturnItemBehaviour,
-            Action<string> _ErrorMessageAction);
+            EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
+            DatabaseAttributeCondition _ConditionExpression = null,
+            Action<string> _ErrorMessageAction = null);
 
         /// <summary>
         /// 
@@ -284,6 +286,7 @@ namespace CloudServiceUtilities
         /// <para><paramref name="_ValueAttribute"/>                Name of the value</para>
         /// <para><paramref name="_IncrementOrDecrementBy"/>        Increment or decrement the value by this</para>
         /// <para><paramref name="_bDecrement"/>                    If true, will be decremented, otherwise incremented</para>
+        /// <para><paramref name="_ConditionExpression"/>           Condition expression to be performed remotely</para>
         /// <para><paramref name="_ErrorMessageAction"/>            Error messages will be pushed to this action</para>
         /// 
         /// <returns> Returns:                                      Operation success</returns>
@@ -297,6 +300,7 @@ namespace CloudServiceUtilities
             string _ValueAttribute,
             double _IncrementOrDecrementBy,
             bool _bDecrement = false,
+            DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null);
 
         /// <summary>
@@ -311,6 +315,7 @@ namespace CloudServiceUtilities
         /// <para><paramref name="_KeyValue"/>                  Value of the key of item</para>
         /// <para><paramref name="_ReturnItem"/>                In case item exists, fills his variable with returned item</para>
         /// <para><paramref name="_ReturnItemBehaviour"/>       In case item exists, defines what service shall return</para>
+        /// <para><paramref name="_ConditionExpression"/>           Condition expression to be performed remotely</para>
         /// <para><paramref name="_ErrorMessageAction"/>        Error messages will be pushed to this action</para>
         /// 
         /// <returns> Returns:                                  Operation success</returns>
@@ -322,6 +327,7 @@ namespace CloudServiceUtilities
             PrimitiveType _KeyValue,
             out Newtonsoft.Json.Linq.JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
+            DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null);
 
         /// <summary>

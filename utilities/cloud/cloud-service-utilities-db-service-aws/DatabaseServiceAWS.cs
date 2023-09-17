@@ -706,6 +706,7 @@ namespace CloudServiceUtilities.DatabaseServices
             PrimitiveType[] _ElementValueEntries,
             out JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour,
+            DatabaseAttributeCondition _ConditionExpression,
             Action<string> _ErrorMessageAction)
         {
             _ReturnItem = null;
@@ -818,6 +819,9 @@ namespace CloudServiceUtilities.DatabaseServices
                 Request.ExpressionAttributeValues.Add(":vals", new AttributeValue { SS = SetAsList });
             }
 
+            if (BuildConditionalExpression(_ConditionExpression, Request.ExpressionAttributeValues, out string FinalConditionExpression))
+                Request.ConditionExpression = FinalConditionExpression;
+
             //Update item in the table
             try
             {
@@ -869,6 +873,7 @@ namespace CloudServiceUtilities.DatabaseServices
             string _ValueAttribute,
             double _IncrementOrDecrementBy,
             bool _bDecrement = false,
+            DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null)
         {
             _NewValue = 0.0f;
@@ -930,6 +935,9 @@ namespace CloudServiceUtilities.DatabaseServices
             };
             Request.UpdateExpression = "SET #V = if_not_exists(#V, :start) + :incr";
 
+            if (BuildConditionalExpression(_ConditionExpression, Request.ExpressionAttributeValues, out string FinalConditionExpression))
+                Request.ConditionExpression = FinalConditionExpression;
+
             //Update item in the table
             try
             {
@@ -977,6 +985,7 @@ namespace CloudServiceUtilities.DatabaseServices
             PrimitiveType _KeyValue,
             out JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
+            DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null)
         {
             _ReturnItem = null;
@@ -999,6 +1008,9 @@ namespace CloudServiceUtilities.DatabaseServices
                 {
                     Config.ReturnValues = ReturnValues.AllOldAttributes;
                 }
+
+                //Set condition expression
+                Config.ConditionalExpression = BuildConditionalExpression(_ConditionExpression);
 
                 //Delete item from the table
                 try

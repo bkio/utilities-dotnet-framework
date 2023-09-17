@@ -4,7 +4,7 @@ using System;
 
 namespace CloudServiceUtilities
 {
-    public enum EBVMInstanceStatus
+    public enum EVMInstanceStatus
     {
         None,
         Stopped,
@@ -12,23 +12,23 @@ namespace CloudServiceUtilities
         PreparingToRun,
         Running
     };
-    public enum EBVMInstanceAction
+    public enum EVMInstanceAction
     {
         Start,
         Stop,
         Restart
     };
-    public enum EBVMDiskType
+    public enum EVMDiskType
     {
         HDD,
         SSD
     }
-    public enum EBVMOSType
+    public enum EVMOSType
     {
         Linux,
         Windows
     }
-    public class BVMNetworkFirewall
+    public class VMNetworkFirewall
     {
         public enum EVMNetworkFirewallPortProtocol
         {
@@ -36,7 +36,7 @@ namespace CloudServiceUtilities
             UDP,
             Both
         }
-        public class BVMNetworkFirewallPortRange
+        public class VMNetworkFirewallPortRange
         {
             public ushort FromPortInclusive;
             public ushort ToPortInclusive;
@@ -44,7 +44,7 @@ namespace CloudServiceUtilities
         }
 
         public bool bOpenAll = false;
-        public System.Collections.Generic.List<BVMNetworkFirewallPortRange> OpenPorts = new System.Collections.Generic.List<BVMNetworkFirewallPortRange>();
+        public System.Collections.Generic.List<VMNetworkFirewallPortRange> OpenPorts = new System.Collections.Generic.List<VMNetworkFirewallPortRange>();
     }
 
     public interface IVMServiceInterface
@@ -103,10 +103,10 @@ namespace CloudServiceUtilities
             int _GpuCount,
             string _GpuName,
             string _OSSourceImageURL,
-            EBVMDiskType _DiskType,
-            EBVMOSType _OSType,
+            EVMDiskType _DiskType,
+            EVMOSType _OSType,
             System.Collections.Generic.IDictionary<string, string> _Labels,
-            BVMNetworkFirewall _FirewallSettings,
+            VMNetworkFirewall _FirewallSettings,
             string _OptionalStartupScript,
             out int _ErrorCode,
             Action<string> _ErrorMessageAction);
@@ -190,7 +190,7 @@ namespace CloudServiceUtilities
         /// </summary>
         bool GetInstanceStatus(
             string _UniqueInstanceName,
-            out EBVMInstanceStatus _Status,
+            out EVMInstanceStatus _Status,
             Action<string> _ErrorMessageAction);
 
         /// <summary>
@@ -205,7 +205,7 @@ namespace CloudServiceUtilities
         /// <returns>Returns: Enumerated status</returns>
         /// 
         /// </summary>
-        EBVMInstanceStatus GetStatusFromString(
+        EVMInstanceStatus GetStatusFromString(
             string _Status);
 
         /// <summary>
@@ -224,7 +224,7 @@ namespace CloudServiceUtilities
         /// </summary>
         bool WaitUntilInstanceStatus(
             string _UniqueInstanceName,
-            EBVMInstanceStatus[] _OrStatus,
+            EVMInstanceStatus[] _OrStatus,
             Action<string> _ErrorMessageAction);
 
         /// <summary>
@@ -246,7 +246,7 @@ namespace CloudServiceUtilities
         /// </summary>
         bool RunCommand(
             string[] _UniqueInstanceNames,
-            EBVMOSType _VMOperationSystemType,
+            EVMOSType _VMOperationSystemType,
             string[] _Commands,
             Action _OnCompleted, 
             Action _OnFailure, 

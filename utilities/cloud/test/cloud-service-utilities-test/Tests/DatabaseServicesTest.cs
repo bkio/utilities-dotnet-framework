@@ -211,6 +211,7 @@ namespace CloudServiceUtilitiesTest.Tests
                 },
                 out JObject ReturnValue,
                 EReturnItemBehaviour.ReturnAllNew,
+                null,
                 (string Message) =>
                 {
                     PrintAction?.Invoke($"Step {_TestStepNo}->TestRemoveFromList->Error-> {Message}");
@@ -226,6 +227,7 @@ namespace CloudServiceUtilitiesTest.Tests
 
             return true;
         }
+
 
         private bool TestPutItem(int _TestStepNo, DatabaseAttributeCondition _ConditionExpression = null)
         {
@@ -352,6 +354,7 @@ namespace CloudServiceUtilitiesTest.Tests
                 "Test_Attr_Key_2",
                 11120.0f,
                 true,
+                null,
                 (string Message) =>
                 {
                     PrintAction?.Invoke($"Step {_TestStepNo}->TestIncrement->Error-> {Message}");
@@ -413,6 +416,7 @@ namespace CloudServiceUtilitiesTest.Tests
                 Key, new PrimitiveType("test_1"),
                 out JObject Result_3,
                 EReturnItemBehaviour.ReturnAllOld,
+                null,
                 (string Message) =>
                 {
                     PrintAction?.Invoke($"Step {_TestStepNo}->TestDeleteItem->Error-> { Message}");

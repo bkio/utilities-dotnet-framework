@@ -473,7 +473,7 @@ namespace CloudServiceUtilities.DatabaseServices
             DatabaseAttributeCondition _ConditionExpression = null, 
             Action<string> _ErrorMessageAction = null)
         {
-            return PutOrUpdateItem(EBPutOrUpdateItemType.PutItem, _Table, _KeyName, _KeyValue, _Item, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, _ErrorMessageAction);
+            return PutOrUpdateItem(EPutOrUpdateItemType.PutItem, _Table, _KeyName, _KeyValue, _Item, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, _ErrorMessageAction);
         }
 
         /// <summary>
@@ -495,16 +495,16 @@ namespace CloudServiceUtilities.DatabaseServices
            DatabaseAttributeCondition _ConditionExpression = null,
            Action<string> _ErrorMessageAction = null)
         {
-            return PutOrUpdateItem(EBPutOrUpdateItemType.UpdateItem, _Table, _KeyName, _KeyValue, _UpdateItem, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, _ErrorMessageAction);
+            return PutOrUpdateItem(EPutOrUpdateItemType.UpdateItem, _Table, _KeyName, _KeyValue, _UpdateItem, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, _ErrorMessageAction);
         }
 
-        private enum EBPutOrUpdateItemType
+        private enum EPutOrUpdateItemType
         {
             PutItem,
             UpdateItem
         }
         private bool PutOrUpdateItem(
-            EBPutOrUpdateItemType _PutOrUpdateItemType,
+            EPutOrUpdateItemType _PutOrUpdateItemType,
             string _Table,
             string _KeyName,
             PrimitiveType _KeyValue,
@@ -531,7 +531,7 @@ namespace CloudServiceUtilities.DatabaseServices
                     JObject ReturnedPreOperationObject = null;
                     using (DatastoreTransaction Transaction = DSDB.BeginTransaction())
                     {
-                        if (_PutOrUpdateItemType == EBPutOrUpdateItemType.UpdateItem)
+                        if (_PutOrUpdateItemType == EPutOrUpdateItemType.UpdateItem)
                         {
                             if (!GetItemInTransaction(Transaction, Factory, _KeyName, _KeyValue, out ReturnedPreOperationObject, _ErrorMessageAction))
                             {
@@ -543,7 +543,7 @@ namespace CloudServiceUtilities.DatabaseServices
                         if (_ConditionExpression != null)
                         {
                             //If it's PutItem, GetItemInTransaction has not been called yet.
-                            if (_PutOrUpdateItemType == EBPutOrUpdateItemType.PutItem)
+                            if (_PutOrUpdateItemType == EPutOrUpdateItemType.PutItem)
                             {
                                 if (!GetItemInTransaction(Transaction, Factory, _KeyName, _KeyValue, out ReturnedPreOperationObject, _ErrorMessageAction))
                                 {
@@ -558,7 +558,7 @@ namespace CloudServiceUtilities.DatabaseServices
                             }
                         }
 
-                        if (_PutOrUpdateItemType == EBPutOrUpdateItemType.UpdateItem)
+                        if (_PutOrUpdateItemType == EPutOrUpdateItemType.UpdateItem)
                         {
                             if (ReturnedPreOperationObject != null)
                             {
@@ -797,6 +797,7 @@ namespace CloudServiceUtilities.DatabaseServices
             PrimitiveType[] _ElementValueEntries,
             out JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour,
+            DatabaseAttributeCondition _ConditionExpression,
             Action<string> _ErrorMessageAction)
         {
             _ReturnItem = null;
@@ -851,6 +852,11 @@ namespace CloudServiceUtilities.DatabaseServices
                                 //Does not exist as an array
                                 return true;
                             }
+                        }
+
+                        if (!ConditionCheck(ReturnedPreOperationObject, _KeyName, _ConditionExpression, _ErrorMessageAction))
+                        {
+                            return false;
                         }
 
                         if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld)
@@ -941,6 +947,7 @@ namespace CloudServiceUtilities.DatabaseServices
             string _ValueAttribute,
             double _IncrementOrDecrementBy,
             bool _bDecrement = false,
+            DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null)
         {
             _NewValue = _IncrementOrDecrementBy;
@@ -955,6 +962,11 @@ namespace CloudServiceUtilities.DatabaseServices
                         if (!GetItemInTransaction(Transaction, Factory, _KeyName, _KeyValue, out JObject ReturnItem, _ErrorMessageAction))
                         {
                             _ErrorMessageAction?.Invoke("DatabaseServiceGC->IncrementOrDecrementItemValue: GetItemInTransaction failed.");
+                            return false;
+                        }
+
+                        if (!ConditionCheck(ReturnItem, _KeyName, _ConditionExpression, _ErrorMessageAction))
+                        {
                             return false;
                         }
 
@@ -1039,6 +1051,7 @@ namespace CloudServiceUtilities.DatabaseServices
             PrimitiveType _KeyValue,
             out JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
+            DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null)
         {
             _ReturnItem = null;
@@ -1050,11 +1063,16 @@ namespace CloudServiceUtilities.DatabaseServices
                 {
                     using (DatastoreTransaction Transaction = DSDB.BeginTransaction())
                     {
-                        if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld)
+                        if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld || _ConditionExpression != null)
                         {
                             if (!GetItemInTransaction(Transaction, Factory, _KeyName, _KeyValue, out _ReturnItem, _ErrorMessageAction))
                             {
                                 _ErrorMessageAction?.Invoke("DatabaseServiceGC->DeleteItem: GetItemInTransaction failed.");
+                                return false;
+                            }
+
+                            if (!ConditionCheck(_ReturnItem, _KeyName, _ConditionExpression, _ErrorMessageAction))
+                            {
                                 return false;
                             }
                         }
@@ -1221,6 +1239,7 @@ namespace CloudServiceUtilities.DatabaseServices
             Action<string> _ErrorMessageAction = null)
         {
             if (_ConditionExpression == null) return true;
+            if (_JObjectToCheck == null) return true;
 
             var BuiltCondition = _ConditionExpression.GetBuiltCondition();
 
@@ -1233,22 +1252,16 @@ namespace CloudServiceUtilities.DatabaseServices
                 {
                     bConditionSatisfied = true;
 
-                    if (_JObjectToCheck != null)
+                    if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
                     {
-                        if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
-                        {
-                            bConditionSatisfied = false;
-                        }
+                        bConditionSatisfied = false;
                     }
                 }
-                else if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeExists)
+                else //if (_ConditionExpression.AttributeConditionType == EDatabaseAttributeConditionType.AttributeExists)
                 {
-                    if (_JObjectToCheck != null)
+                    if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
                     {
-                        if (BuiltCondition.Item1 == _KeyName || _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
-                        {
-                            bConditionSatisfied = true;
-                        }
+                        bConditionSatisfied = true;
                     }
                 }
 
@@ -1260,7 +1273,7 @@ namespace CloudServiceUtilities.DatabaseServices
             else
             {
                 bool bConditionSatisfied = false;
-                if (_JObjectToCheck != null && _JObjectToCheck.ContainsKey(BuiltCondition.Item1))
+                if (_JObjectToCheck.ContainsKey(BuiltCondition.Item1))
                 {
                     switch (BuiltCondition.Item2.Item2.Type)
                     {
@@ -1398,6 +1411,25 @@ namespace CloudServiceUtilities.DatabaseServices
             }
             
             return true;
+        }
+
+        private static bool SearchJsonText(JToken _Token, string _SearchText)
+        {
+            if (_Token.Type == JTokenType.String)
+            {
+                return ((string)_Token).Contains(_SearchText, StringComparison.OrdinalIgnoreCase);
+            }
+            else if (_Token.Type == JTokenType.Object || _Token.Type == JTokenType.Array)
+            {
+                foreach (var Child in _Token.Children())
+                {
+                    if (SearchJsonText(Child, _SearchText))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         private class AttributeEqualsConditionDatastore : DatabaseAttributeCondition

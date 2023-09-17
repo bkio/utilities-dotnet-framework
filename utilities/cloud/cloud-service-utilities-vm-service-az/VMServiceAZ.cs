@@ -90,10 +90,10 @@ namespace CloudServiceUtilities.VMServices
             int _GpuCount,
             string _GpuName,
             string _OSSourceImageURL,
-            EBVMDiskType _DiskType,
-            EBVMOSType _OSType,
+            EVMDiskType _DiskType,
+            EVMOSType _OSType,
             IDictionary<string, string> _Labels,
-            BVMNetworkFirewall _FirewallSettings,
+            VMNetworkFirewall _FirewallSettings,
             string _OptionalStartupScript,
             out int _ErrorCode,
             Action<string> _ErrorMessageAction)
@@ -246,43 +246,43 @@ namespace CloudServiceUtilities.VMServices
             return Result;
         }
 
-        public EBVMInstanceStatus GetStatusFromString(string _Status)
+        public EVMInstanceStatus GetStatusFromString(string _Status)
         {
             _Status = _Status.ToLower();
 
             if (_Status.Contains("running"))
             {
-                return EBVMInstanceStatus.Running;
+                return EVMInstanceStatus.Running;
             }
             else if (_Status.Contains("stopped") || _Status.Contains("deallocated"))
             {
-                return EBVMInstanceStatus.Stopped;
+                return EVMInstanceStatus.Stopped;
             }
             else if (_Status.Contains("starting"))
             {
-                return EBVMInstanceStatus.PreparingToRun;
+                return EVMInstanceStatus.PreparingToRun;
             }
             else if (_Status.Contains("stopping") || _Status.Contains("deallocating"))
             {
-                return EBVMInstanceStatus.Stopping;
+                return EVMInstanceStatus.Stopping;
             }
-            return EBVMInstanceStatus.None;
+            return EVMInstanceStatus.None;
         }
 
         public bool GetInstanceStatus(
             string _UniqueInstanceName,
-            out EBVMInstanceStatus _Status,
+            out EVMInstanceStatus _Status,
             Action<string> _ErrorMessageAction)
         {
-            _Status = EBVMInstanceStatus.None;
+            _Status = EVMInstanceStatus.None;
 
             var FoundInstance = FindInstanceByUniqueName(_UniqueInstanceName, _ErrorMessageAction);
             if (FoundInstance != null)
             {
                 _Status = GetStatusFromString(FoundInstance.PowerState.ToString());
-                if (_Status == EBVMInstanceStatus.None)
+                if (_Status == EVMInstanceStatus.None)
                 {
-                    _Status = EBVMInstanceStatus.None;
+                    _Status = EVMInstanceStatus.None;
                     _ErrorMessageAction?.Invoke($"VMServiceAZ->GetInstanceStatus: Unexpected instance status: {FoundInstance.PowerState}");
                     return false;
                 }
@@ -291,9 +291,9 @@ namespace CloudServiceUtilities.VMServices
             return false;
         }
 
-        //EBVMInstanceStatus is the condition in here
+        //EVMInstanceStatus is the condition in here
         private bool PerformActionOnInstances(
-            Tuple<string, EBVMInstanceAction, EBVMInstanceStatus>[] _Operations,
+            Tuple<string, EVMInstanceAction, EVMInstanceStatus>[] _Operations,
             Action _OnCompleted,
             Action _OnFailure,
             Action<string> _ErrorMessageAction)
@@ -311,17 +311,17 @@ namespace CloudServiceUtilities.VMServices
                         if (GetStatusFromString(FoundInstance.PowerState.ToString()) == _Operation.Item3)
                         {
                             Task RequestAction = null;
-                            if (_Operation.Item2 == EBVMInstanceAction.Start)
+                            if (_Operation.Item2 == EVMInstanceAction.Start)
                             {
                                 RequestAction = FoundInstance.StartAsync();
                                 _ErrorMessageAction?.Invoke($"[LOG:] PerformActionOnInstances: StartAsync has been called for VM: {_Operation.Item1}");
                             }
-                            else if (_Operation.Item2 == EBVMInstanceAction.Stop)
+                            else if (_Operation.Item2 == EVMInstanceAction.Stop)
                             {
                                 RequestAction = FoundInstance.DeallocateAsync();
                                 _ErrorMessageAction?.Invoke($"[LOG:] PerformActionOnInstances: DeallocateAsync has been called for VM: {_Operation.Item1}");
                             }
-                            else if ((_Operation.Item2 == EBVMInstanceAction.Restart))
+                            else if ((_Operation.Item2 == EVMInstanceAction.Restart))
                             {
                                 RequestAction = FoundInstance.RestartAsync();
                                 _ErrorMessageAction?.Invoke($"[LOG:] PerformActionOnInstances: RestartAsync has been called for VM: {_Operation.Item1}");
@@ -376,31 +376,31 @@ namespace CloudServiceUtilities.VMServices
 
         private bool StartStopRestartInstances(
             string[] _UniqueInstanceNames,
-            EBVMInstanceAction _Action,
+            EVMInstanceAction _Action,
             Action _OnCompleted,
             Action _OnFailure,
             Action<string> _ErrorMessageAction = null)
         {
             if (_UniqueInstanceNames != null && _UniqueInstanceNames.Length > 0)
             {
-                var Actions = new Tuple<string, EBVMInstanceAction, EBVMInstanceStatus>[_UniqueInstanceNames.Length];
+                var Actions = new Tuple<string, EVMInstanceAction, EVMInstanceStatus>[_UniqueInstanceNames.Length];
 
-                EBVMInstanceStatus ConditionStatus = EBVMInstanceStatus.None;
+                EVMInstanceStatus ConditionStatus = EVMInstanceStatus.None;
                 switch (_Action)
                 {
-                    case EBVMInstanceAction.Start:
-                        ConditionStatus = EBVMInstanceStatus.Stopped;
+                    case EVMInstanceAction.Start:
+                        ConditionStatus = EVMInstanceStatus.Stopped;
                         break;
-                    case EBVMInstanceAction.Stop:
-                    case EBVMInstanceAction.Restart:
-                        ConditionStatus = EBVMInstanceStatus.Running;
+                    case EVMInstanceAction.Stop:
+                    case EVMInstanceAction.Restart:
+                        ConditionStatus = EVMInstanceStatus.Running;
                         break;
                 }
 
                 int i = 0;
                 foreach (var _Name in _UniqueInstanceNames)
                 {
-                    Actions[i++] = new Tuple<string, EBVMInstanceAction, EBVMInstanceStatus>(
+                    Actions[i++] = new Tuple<string, EVMInstanceAction, EVMInstanceStatus>(
                         _Name,
                         _Action,
                         ConditionStatus);
@@ -416,7 +416,7 @@ namespace CloudServiceUtilities.VMServices
             Action _OnFailure,
             Action<string> _ErrorMessageAction)
         {
-            return StartStopRestartInstances(_UniqueInstanceNames, EBVMInstanceAction.Start, _OnCompleted, _OnFailure, _ErrorMessageAction);
+            return StartStopRestartInstances(_UniqueInstanceNames, EVMInstanceAction.Start, _OnCompleted, _OnFailure, _ErrorMessageAction);
         }
 
         public bool StopInstances(
@@ -425,7 +425,7 @@ namespace CloudServiceUtilities.VMServices
             Action _OnFailure,
             Action<string> _ErrorMessageAction)
         {
-            return StartStopRestartInstances(_UniqueInstanceNames, EBVMInstanceAction.Stop, _OnCompleted, _OnFailure, _ErrorMessageAction);
+            return StartStopRestartInstances(_UniqueInstanceNames, EVMInstanceAction.Stop, _OnCompleted, _OnFailure, _ErrorMessageAction);
         }
 
         public bool RestartInstances(
@@ -434,13 +434,13 @@ namespace CloudServiceUtilities.VMServices
             Action _OnFailure,
             Action<string> _ErrorMessageAction)
         {
-            return StartStopRestartInstances(_UniqueInstanceNames, EBVMInstanceAction.Restart, _OnCompleted, _OnFailure, _ErrorMessageAction);
+            return StartStopRestartInstances(_UniqueInstanceNames, EVMInstanceAction.Restart, _OnCompleted, _OnFailure, _ErrorMessageAction);
         }
 
-        //EBVMInstanceStatus is the condition in here
+        //EVMInstanceStatus is the condition in here
         private bool PerformRunCommandActions(
             string[] _UniqueInstanceNames,
-            EBVMOSType _VMOperationSystemType,
+            EVMOSType _VMOperationSystemType,
             string[] _Commands,
             Action _OnCompleted,
             Action _OnFailure,
@@ -456,10 +456,10 @@ namespace CloudServiceUtilities.VMServices
                     var FoundInstance = FindInstanceByUniqueName(_InstanceName, _ErrorMessageAction);
                     if (FoundInstance != null)
                     {
-                        if (GetStatusFromString(FoundInstance.PowerState.ToString()) == EBVMInstanceStatus.Running)
+                        if (GetStatusFromString(FoundInstance.PowerState.ToString()) == EVMInstanceStatus.Running)
                         {
                             var _CommandId = "RunPowerShellScript";
-                            if (_VMOperationSystemType == EBVMOSType.Linux)
+                            if (_VMOperationSystemType == EVMOSType.Linux)
                             {
                                 _CommandId = "RunShellScript";
                             }
@@ -521,7 +521,7 @@ namespace CloudServiceUtilities.VMServices
 
         public bool RunCommand(
             string[] _UniqueInstanceNames,
-            EBVMOSType _VMOperationSystemType,
+            EVMOSType _VMOperationSystemType,
             string[] _Commands,
             Action _OnCompleted,
             Action _OnFailure,
@@ -536,12 +536,12 @@ namespace CloudServiceUtilities.VMServices
 
         public bool WaitUntilInstanceStatus(
             string _UniqueInstanceName,
-            EBVMInstanceStatus[] _OrStatus,
+            EVMInstanceStatus[] _OrStatus,
             Action<string> _ErrorMessageAction)
         {
-            EBVMInstanceStatus CurrentInstanceStatus = EBVMInstanceStatus.None;
+            EVMInstanceStatus CurrentInstanceStatus = EVMInstanceStatus.None;
 
-            List<EBVMInstanceStatus> Conditions = new List<EBVMInstanceStatus>(_OrStatus);
+            List<EVMInstanceStatus> Conditions = new List<EVMInstanceStatus>(_OrStatus);
 
             int LocalErrorRetryCount = 0;
             do
