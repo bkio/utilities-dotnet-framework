@@ -568,15 +568,28 @@ namespace CloudServiceUtilities.FileServices
 
                     var MetaResponse = CreatedTask.Result;
 
-                    if (MetaResponse == null || MetaResponse.Metadata == null)
+                    if (MetaResponse == null)
                     {
-                        _ErrorMessageAction?.Invoke("FileServiceAWS->GetFileMetadata: MetaResponse or MetaResponse.Metadata is null.");
+                        _ErrorMessageAction?.Invoke("FileServiceAWS->GetFileMetadata: MetaResponse is null.");
                         return false;
                     }
 
-                    foreach (var CurrentMetaKey in MetaResponse.Metadata.Keys)
+                    if (MetaResponse.Metadata != null)
                     {
-                        _Metadata.Add(CurrentMetaKey, MetaResponse.Metadata[CurrentMetaKey]);
+                        foreach (var CurrentMetaKey in MetaResponse.Metadata.Keys)
+                        {
+                            _Metadata.Add(CurrentMetaKey, MetaResponse.Metadata[CurrentMetaKey]);
+                        }
+                    }
+                    if (MetaResponse.Headers != null)
+                    {
+                        foreach (var CurrentMetaHeaderKey in MetaResponse.Headers.Keys)
+                        {
+                            if (!_Metadata.ContainsKey(CurrentMetaHeaderKey))
+                            {
+                                _Metadata.Add(CurrentMetaHeaderKey, MetaResponse.Headers[CurrentMetaHeaderKey]);
+                            }
+                        }
                     }
                 }
             }
