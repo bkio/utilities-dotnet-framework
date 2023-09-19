@@ -406,8 +406,8 @@ namespace CloudServiceUtilities.FileServices
                             }
                         }
                     }
-                    
-                    _Destination.Stream.Position = 0;
+
+                    //_Destination.Stream.Position = 0; //Causes exception: This stream does not support seek operations.
                 }
                 catch (Exception e)
                 {
