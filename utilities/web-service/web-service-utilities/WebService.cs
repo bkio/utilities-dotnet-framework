@@ -415,6 +415,8 @@ namespace WebServiceUtilities
                         {
                             try
                             {
+                                if (_Config.HandleUncaughtException != null && _Config.HandleUncaughtException(e)) return;
+
                                 WriteInternalError(Context.Response, $"An unexpected internal error has occured: {e.Message}");
                             }
                             catch (Exception) { }
@@ -488,5 +490,10 @@ namespace WebServiceUtilities
     public class WebServiceConfig
     {
         public bool bLogNotBeingListenedRequests = true;
+
+        /// <summary>
+        /// If returns true, means exception is handled; will not proceed to throw error message.
+        /// </summary>
+        public Func<Exception, bool> HandleUncaughtException = null;
     }
 }
