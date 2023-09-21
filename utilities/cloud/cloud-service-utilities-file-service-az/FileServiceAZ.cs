@@ -778,7 +778,7 @@ namespace CloudServiceUtilities.FileServices
         {
             try
             {
-                SystemTopic TopicInfo = new SystemTopic(ResourceGroupLocation,
+                var TopicInfo = new SystemTopic(ResourceGroupLocation,
                     $"/subscriptions/{SubscriptionId}/resourceGroups/{ResourceGroupName}/providers/Microsoft.EventGrid/systemTopics/{_TopicName}",
                     _TopicName,
                     "Microsoft.EventGrid/systemTopics",

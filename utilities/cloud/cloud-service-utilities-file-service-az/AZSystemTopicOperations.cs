@@ -1,6 +1,5 @@
 ﻿/// Copyright 2022- Burak Kara, All rights reserved.
 
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -10,9 +9,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using Microsoft.Azure.Management.EventGrid;
-using Microsoft.Azure.Management.EventGrid.Models;
 using Microsoft.Rest;
-using Microsoft.Rest.Azure;
 using CloudServiceUtilities_BFileService_AZ.Models;
 
 namespace CloudServiceUtilities_BFileService_AZ

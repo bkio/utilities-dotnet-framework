@@ -8,7 +8,6 @@ using Google.Apis.Auth.OAuth2;
 using Google.Apis.Storage.v1;
 using Google.Cloud.Storage.V1;
 using CommonUtilities;
-using System.Threading.Tasks;
 
 namespace CloudServiceUtilities.FileServices
 {
