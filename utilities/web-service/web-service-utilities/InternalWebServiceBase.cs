@@ -12,7 +12,7 @@ namespace WebServiceUtilities
     public abstract class InternalWebServiceBase : WebServiceBase
     {
         protected readonly string InternalCallPrivateKey;
-        private string WebhookRequestCallbak = null;
+        private string WebhookRequestCallback = null;
         private string WebhookRequestOrigin = null;
 
         public InternalWebServiceBase(string _InternalCallPrivateKey)
@@ -27,18 +27,16 @@ namespace WebServiceUtilities
             // https://github.com/cloudevents/spec/blob/v1.0/http-webhook.md#4-abuse-protection
             if (_Context.Request.HttpMethod == "OPTIONS")
             {
-                WebhookRequestCallbak = _Context.Request.Headers.Get("WebHook-Request-Callback");
+                WebhookRequestCallback = _Context.Request.Headers.Get("WebHook-Request-Callback");
                 WebhookRequestOrigin = _Context.Request.Headers.Get("WebHook-Request-Origin");
 
-                if (WebhookRequestCallbak != null && WebhookRequestOrigin != null)
+                if (WebhookRequestCallback != null && WebhookRequestOrigin != null)
                 {
-                    TaskWrapper.Run(() =>
+                    ThreadWrapper.Run(() =>
                     {
-                        Thread.CurrentThread.IsBackground = true;
-
                         Thread.Sleep(1000);
 
-                        SendWebhookValidationRequest(WebhookRequestOrigin, WebhookRequestCallbak, _ErrorMessageAction);
+                        SendWebhookValidationRequest(WebhookRequestOrigin, WebhookRequestCallback, _ErrorMessageAction);
                     });
 
                     return WebResponse.StatusOK("OK.");
@@ -54,7 +52,7 @@ namespace WebServiceUtilities
             return WebResponse.Forbidden("You are trying to access to a private service.");
         }
 
-        private void SendWebhookValidationRequest(string _WebhookRequestOrigin, string _WebhookRequestCallbak, Action<string> _ErrorMessageAction)
+        private void SendWebhookValidationRequest(string _WebhookRequestOrigin, string _WebhookRequestCallback, Action<string> _ErrorMessageAction)
         {
             using var Handler = new HttpClientHandler
             {
@@ -64,7 +62,7 @@ namespace WebServiceUtilities
             using var Client = new HttpClient(Handler);
             Client.DefaultRequestHeaders.TryAddWithoutValidation("WebHook-Allowed-Origin", _WebhookRequestOrigin);
             Client.DefaultRequestHeaders.TryAddWithoutValidation("WebHook-Allowed-Rate", "*");
-            using (var RequestTask = Client.GetAsync(_WebhookRequestCallbak))
+            using (var RequestTask = Client.GetAsync(_WebhookRequestCallback))
             {
                 RequestTask.Wait();
                 using var Response = RequestTask.Result;

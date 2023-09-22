@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace CommonUtilities
 {
@@ -31,7 +32,7 @@ namespace CommonUtilities
             return Instance;
         }
 
-        private readonly List<Tuple<Thread, Atomicable<bool>>> CreatedThreads = new List<Tuple<Thread, Atomicable<bool>>>();
+        private readonly List<Tuple<Task, CancellationTokenSource>> CreatedTasks = new List<Tuple<Task, CancellationTokenSource>>();
         private readonly object CreatedTasks_Lock = new object();
         private bool bRunning = true;
 
@@ -42,60 +43,60 @@ namespace CommonUtilities
 
             while (bRunning)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(2500);
 
                 lock (Get().CreatedTasks_Lock)
                 {
-                    for (var i = Get().CreatedThreads.Count - 1; i >= 0; i--)
+                    for (var i = Get().CreatedTasks.Count - 1; i >= 0; i--)
                     {
-                        var CurrentTask = Get().CreatedThreads[i];
+                        var CurrentTask = Get().CreatedTasks[i];
 
-                        if (CurrentTask != null)
+                        bool bCheckSucceed = false;
+                        try
                         {
-                            bool bCancelRequested = CurrentTask.Item2 != null && CurrentTask.Item2.Get();
-
-                            if (bCancelRequested)
+                            if (CurrentTask != null)
                             {
-                                try
+                                if (CurrentTask.Item1.IsCanceled || CurrentTask.Item1.IsCompleted || CurrentTask.Item1.IsFaulted)
                                 {
-                                    CurrentTask.Item1.Abort();
-                                }
-                                catch (Exception) { }
-                            }
+                                    try
+                                    {
+                                        CurrentTask.Item2?.Dispose();
+                                    }
+                                    catch (Exception) { }
 
-                            if (bCancelRequested
-                                || !CurrentTask.Item1.IsAlive 
-                                || CurrentTask.Item1.ThreadState == ThreadState.Aborted
-                                || CurrentTask.Item1.ThreadState == ThreadState.AbortRequested
-                                || CurrentTask.Item1.ThreadState == ThreadState.Stopped
-                                || CurrentTask.Item1.ThreadState == ThreadState.StopRequested
-                                || CurrentTask.Item1.ThreadState == ThreadState.Suspended
-                                || CurrentTask.Item1.ThreadState == ThreadState.SuspendRequested)
-                            {
-                                CreatedThreads.RemoveAt(i);
+                                    CreatedTasks.RemoveAt(i);
+                                    CurrentTask.Item1.Dispose();
+                                }
+                                bCheckSucceed = true;
                             }
+                        }
+                        catch (Exception) { }
+
+                        if (!bCheckSucceed)
+                        {
+                            CreatedTasks.RemoveAt(i);
                         }
                     }
                 }
             }
         }
 
-        public static void Run(Action _Action, Atomicable<bool> _bCancel = null)
+        public static void Run(Action _Action, CancellationTokenSource _CancellationTokenSource = null)
         {
             if (_Action != null)
             {
                 lock (Get().CreatedTasks_Lock)
                 {
-                    var NewThread = new Thread(() =>
+                    if (_CancellationTokenSource != null)
                     {
-                        Thread.CurrentThread.IsBackground = true;
-                        _Action?.Invoke();
-                    });
-                    NewThread.Start();
-
-                    Get().CreatedThreads.Add(new Tuple<Thread, Atomicable<bool>>(NewThread, _bCancel));
+                        Get().CreatedTasks.Add(new Tuple<Task, CancellationTokenSource>(Task.Run(_Action, _CancellationTokenSource.Token), _CancellationTokenSource));
+                    }
+                    else
+                    {
+                        Get().CreatedTasks.Add(new Tuple<Task, CancellationTokenSource>(Task.Run(_Action), null));
+                    }
                 }
             }
         }
-	}
+    }
 }

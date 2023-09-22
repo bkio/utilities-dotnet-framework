@@ -112,7 +112,7 @@ namespace WebServiceUtilities
 
             var bStartSucceed = new Atomicable<bool>(false);
             var WaitForFirstSuccess = new ManualResetEvent(false);
-            TaskWrapper.Run(() =>
+            ThreadWrapper.Run(() =>
             {
                 var WaitForException = new ManualResetEvent(false);
                 int FailureCount = 0;
@@ -176,7 +176,7 @@ namespace WebServiceUtilities
                 return;
             }
 
-            TaskWrapper.Run(() =>
+            ThreadWrapper.Run(() =>
             {
                 _ServerLogAction?.Invoke($"WebService->Run: Server is running. Listening port {ServerPort}");
 

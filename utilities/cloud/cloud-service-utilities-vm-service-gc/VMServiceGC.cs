@@ -622,10 +622,8 @@ namespace CloudServiceUtilities.VMServices
                 }
                 if (ProgressStack.Count > 0)
                 {
-                    TaskWrapper.Run(() =>
+                    ThreadWrapper.Run(() =>
                     {
-                        Thread.CurrentThread.IsBackground = true;
-
                         try
                         {
                             using (var CreatedTask = Request.ExecuteAsync())
