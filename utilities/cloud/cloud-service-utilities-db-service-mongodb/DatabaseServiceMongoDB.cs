@@ -218,6 +218,22 @@ namespace CloudServiceUtilities.DatabaseServices
             }
         }
 
+        private FilterDefinition<BsonDocument> BuildEqFilter(string _KeyName, PrimitiveType _KeyValue)
+        {
+            switch (_KeyValue.Type)
+            {
+                case EPrimitiveTypeEnum.Double:
+                    return Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.AsDouble);
+                case EPrimitiveTypeEnum.Integer:
+                    return Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.AsInteger);
+                case EPrimitiveTypeEnum.ByteArray:
+                    return Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.AsByteArray);
+                case EPrimitiveTypeEnum.String:
+                    return Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.AsString);
+            }
+            return Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+        }
+
         /// <summary>
         /// 
         /// <para>GetItem</para>
@@ -242,7 +258,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
             try
             {
-                var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+                var Filter = BuildEqFilter(_KeyName, _KeyValue);
                 var Document = FindOne(Table, Filter);
 
                 if (Document != null)
@@ -295,11 +311,11 @@ namespace CloudServiceUtilities.DatabaseServices
                 if (bFirst)
                 {
                     bFirst = false;
-                    Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, Value.ToString());
+                    Filter = BuildEqFilter(_KeyName, Value);
                 }
                 else
                 {
-                    Filter = Builders<BsonDocument>.Filter.Or(Filter, Builders<BsonDocument>.Filter.Eq(_KeyName, Value.ToString()));
+                    Filter = Builders<BsonDocument>.Filter.Or(Filter, BuildEqFilter(_KeyName, Value));
                 }
             }
 
@@ -393,7 +409,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
             try
             {
-                var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+                var Filter = BuildEqFilter(_KeyName, _KeyValue);
 
                 if (_ConditionExpression != null)
                 {
@@ -409,7 +425,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
                 if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld)
                 {
-                    var GetFilter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+                    var GetFilter = BuildEqFilter(_KeyName, _KeyValue);
                     var Document = FindOne(Table, GetFilter);
                     if (Document != null)
                     {
@@ -471,7 +487,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
             try
             {
-                var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+                var Filter = BuildEqFilter(_KeyName, _KeyValue);
 
                 if (_ConditionExpression != null)
                 {
@@ -556,7 +572,7 @@ namespace CloudServiceUtilities.DatabaseServices
             var Table = GetTable(_Table);
             if (Table == null) return false;
 
-            var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+            var Filter = BuildEqFilter(_KeyName, _KeyValue);
 
             try
             {
@@ -597,7 +613,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
                 if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld)
                 {
-                    var GetFilter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+                    var GetFilter = BuildEqFilter(_KeyName, _KeyValue);
                     var Document = FindOne(Table, GetFilter);
                     if (Document != null)
                     {
@@ -613,7 +629,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
                 if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllNew)
                 {
-                    var GetFilter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+                    var GetFilter = BuildEqFilter(_KeyName, _KeyValue);
                     var Document = FindOne(Table, GetFilter);
                     if (Document != null)
                     {
@@ -677,7 +693,7 @@ namespace CloudServiceUtilities.DatabaseServices
             var Table = GetTable(_Table);
             if (Table == null) return false;
 
-            var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+            var Filter = BuildEqFilter(_KeyName, _KeyValue);
 
             if (_ConditionExpression != null)
             {
@@ -718,7 +734,7 @@ namespace CloudServiceUtilities.DatabaseServices
             {
                 if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld)
                 {
-                    var GetFilter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+                    var GetFilter = BuildEqFilter(_KeyName, _KeyValue);
                     var Document = FindOne(Table, GetFilter);
                     if (Document != null)
                     {
@@ -734,7 +750,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
                 if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllNew)
                 {
-                    var GetFilter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+                    var GetFilter = BuildEqFilter(_KeyName, _KeyValue);
                     var Document = FindOne(Table, GetFilter);
                     if (Document != null)
                     {
@@ -776,7 +792,7 @@ namespace CloudServiceUtilities.DatabaseServices
             var Table = GetTable(_Table);
             if (Table == null) return false;
 
-            var Filter = Builders<BsonDocument>.Filter.Eq(_KeyName, _KeyValue.ToString());
+            var Filter = BuildEqFilter(_KeyName, _KeyValue);
 
             if (_ConditionExpression != null)
             {
