@@ -323,7 +323,7 @@ namespace CloudServiceUtilities.DatabaseServices
 
                             if (Document.TryGetElement(_KeyName, out BsonElement _Value))
                             {
-                                AddKeyToJson(CreatedJson, _KeyName, new PrimitiveType(_Value.Value.AsString));
+                                AddKeyToJson(CreatedJson, _KeyName, BsonValueToPrimitiveType(_Value.Value));
                             }
                             else
                             {
@@ -949,7 +949,7 @@ namespace CloudServiceUtilities.DatabaseServices
                         {
                             if (Document.TryGetElement(_KeyName, out BsonElement _Value))
                             {
-                                AddKeyToJson(CreatedJson, _KeyName, new PrimitiveType(_Value.Value.AsString));
+                                AddKeyToJson(CreatedJson, _KeyName, BsonValueToPrimitiveType(_Value.Value));
                                 break;
                             }
                         }
@@ -972,6 +972,23 @@ namespace CloudServiceUtilities.DatabaseServices
             }
 
             return false;
+        }
+
+        private static PrimitiveType BsonValueToPrimitiveType(BsonValue _BsonValue)
+        {
+            switch (_BsonValue.BsonType)
+            {
+                case BsonType.String:
+                    return new PrimitiveType(_BsonValue.AsString);
+                case BsonType.Int32:
+                case BsonType.Int64:
+                    return new PrimitiveType(_BsonValue.AsInt64);
+                case BsonType.Double:
+                    return new PrimitiveType(_BsonValue.AsDouble);
+                case BsonType.Binary:
+                    return new PrimitiveType(_BsonValue.AsByteArray);
+            }
+            return new PrimitiveType(_BsonValue.ToJson());
         }
 
         private class DatabaseAttributeConditionMongo : DatabaseAttributeCondition
