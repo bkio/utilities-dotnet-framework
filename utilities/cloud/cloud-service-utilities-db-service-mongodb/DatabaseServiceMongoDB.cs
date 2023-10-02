@@ -376,11 +376,11 @@ namespace CloudServiceUtilities.DatabaseServices
             PrimitiveType _KeyValue, 
             JObject _PutItem, 
             out JObject _ReturnItem,
-            EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, 
-            DatabaseAttributeCondition _ConditionExpression = null,
+            EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
+            bool _bOverrideIfExist = false,
             Action<string> _ErrorMessageAction = null)
         {
-            return UpdateItem(_Table, _KeyName, _KeyValue, _PutItem, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, _ErrorMessageAction);
+            return PutOrUpdateItem(EPutOrUpdateItemType.PutItem, _Table, _KeyName, _KeyValue, _PutItem, out _ReturnItem, _ReturnItemBehaviour, null, _bOverrideIfExist, _ErrorMessageAction);
         }
 
         /// <summary>
@@ -402,6 +402,26 @@ namespace CloudServiceUtilities.DatabaseServices
             DatabaseAttributeCondition _ConditionExpression = null, 
             Action<string> _ErrorMessageAction = null)
         {
+            return PutOrUpdateItem(EPutOrUpdateItemType.UpdateItem, _Table, _KeyName, _KeyValue, _UpdateItem, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, false, _ErrorMessageAction);
+        }
+
+        private enum EPutOrUpdateItemType
+        {
+            PutItem,
+            UpdateItem
+        }
+        private bool PutOrUpdateItem(
+            EPutOrUpdateItemType _PutOrUpdateItemType,
+            string _Table,
+            string _KeyName,
+            PrimitiveType _KeyValue,
+            JObject _NewItem,
+            out JObject _ReturnItem,
+            EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
+            DatabaseAttributeCondition _IfUpdate_ConditionExpression = null,
+            bool _IfPut_ShouldOverrideIfExist = false,
+            Action<string> _ErrorMessageAction = null)
+        {
             _ReturnItem = null;
 
             var Table = GetTable(_Table);
@@ -411,15 +431,29 @@ namespace CloudServiceUtilities.DatabaseServices
             {
                 var Filter = BuildEqFilter(_KeyName, _KeyValue);
 
-                if (_ConditionExpression != null)
+                if (_PutOrUpdateItemType == EPutOrUpdateItemType.PutItem) 
                 {
-                    var FirstFilter = (_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
-                    var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
-
-                    if (!HasTableMatchingResultWithFilter(Table, FinalFilter))
+                    if (!_IfPut_ShouldOverrideIfExist)
                     {
-                        //Condition failed.
-                        return false;
+                        if (HasTableMatchingResultWithFilter(Table, Filter))
+                        {
+                            //Condition failed.
+                            return false;
+                        }
+                    }
+                }
+                else //if (_PutOrUpdateItemType == EPutOrUpdateItemType.UpdateItem) 
+                {
+                    if (_IfUpdate_ConditionExpression != null)
+                    {
+                        var FirstFilter = (_IfUpdate_ConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                        var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
+
+                        if (!HasTableMatchingResultWithFilter(Table, FinalFilter))
+                        {
+                            //Condition failed.
+                            return false;
+                        }
                     }
                 }
 
@@ -434,7 +468,7 @@ namespace CloudServiceUtilities.DatabaseServices
                     }
                 }
 
-                JObject NewObject = (JObject)_UpdateItem.DeepClone();
+                JObject NewObject = (JObject)_NewItem.DeepClone();
                 AddKeyToJson(NewObject, _KeyName, _KeyValue);
 
                 //use $set for preventing to get element name is not valid exception. more info https://stackoverflow.com/a/35441075

@@ -165,7 +165,7 @@ namespace CloudServiceUtilities
         /// <para><paramref name="_Item"/>                          Item to be put</para>
         /// <para><paramref name="_ReturnItem"/>                    In case item exists, fills his variable with returned item</para>
         /// <para><paramref name="_ReturnItemBehaviour"/>           In case item exists, defines what service shall return</para>
-        /// <para><paramref name="_ConditionExpression"/>           Condition expression to be performed remotely</para>
+        /// <para><paramref name="_bOverrideIfExist"/>              If there is a matching key with the value, should it override or fail?</para>
         /// <para><paramref name="_ErrorMessageAction"/>            Error messages will be pushed to this action</para>
         /// 
         /// <returns> Returns:                                      Operation success</returns>
@@ -178,7 +178,7 @@ namespace CloudServiceUtilities
             Newtonsoft.Json.Linq.JObject _Item,
             out Newtonsoft.Json.Linq.JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
-            DatabaseAttributeCondition _ConditionExpression = null,
+            bool _bOverrideIfExist = false,
             Action<string> _ErrorMessageAction = null);
 
         /// <summary>

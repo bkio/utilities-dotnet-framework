@@ -298,7 +298,7 @@ namespace CloudServiceUtilities.DatabaseServices
             JObject _Item, 
             out JObject _ReturnItem, 
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
-            DatabaseAttributeCondition _ConditionExpression = null, 
+            bool _bOverrideIfExist = false,
             Action<string> _ErrorMessageAction = null)
         {
             _ReturnItem = null;
@@ -357,8 +357,11 @@ namespace CloudServiceUtilities.DatabaseServices
                     }
 
                     //Set condition expression
-                    Config.ConditionalExpression = BuildConditionalExpression(_ConditionExpression);
-
+                    if (!_bOverrideIfExist)
+                    {
+                        Config.ConditionalExpression = BuildConditionalExpression(new AttributeNotExistConditionDynamodb(_KeyName));
+                    }
+                    
                     //Put item to the table
                     try
                     {

@@ -56,11 +56,11 @@ namespace CloudServiceUtilitiesTest.Tests
 
             PreCleanup();
 
-            if (!TestPutItem(1)) return false;
+            if (!TestPutItem(1, true)) return false;
 
             PrintAction?.Invoke("DatabaseServicesTest->Log-> Conditional put item, expecting failure.");
 
-            if (TestPutItem(2, SelectedDBService.BuildAttributeNotExistCondition(Key))) return false;
+            if (TestPutItem(2, false)) return false;
 
             if (!TestGetItem(3)) return false;
 
@@ -229,7 +229,7 @@ namespace CloudServiceUtilitiesTest.Tests
         }
 
 
-        private bool TestPutItem(int _TestStepNo, DatabaseAttributeCondition _ConditionExpression = null)
+        private bool TestPutItem(int _TestStepNo, bool _bOverrideIfExist)
         {
             //Test put item
             PrintAction?.Invoke($"Step {_TestStepNo}-> TestPutItem->Log-> Testing PutItem...");
@@ -249,7 +249,7 @@ namespace CloudServiceUtilitiesTest.Tests
                                 ))),
                 out JObject Result_1,
                 EReturnItemBehaviour.ReturnAllOld,
-                _ConditionExpression,
+                _bOverrideIfExist,
                 (string Message) =>
                 {
                     PrintAction?.Invoke($"Step {_TestStepNo}->TestPutItem->Error-> {Message}");

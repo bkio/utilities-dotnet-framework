@@ -470,10 +470,10 @@ namespace CloudServiceUtilities.DatabaseServices
             JObject _Item, 
             out JObject _ReturnItem, 
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
-            DatabaseAttributeCondition _ConditionExpression = null, 
+            bool _bOverrideIfExist = false,
             Action<string> _ErrorMessageAction = null)
         {
-            return PutOrUpdateItem(EPutOrUpdateItemType.PutItem, _Table, _KeyName, _KeyValue, _Item, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, _ErrorMessageAction);
+            return PutOrUpdateItem(EPutOrUpdateItemType.PutItem, _Table, _KeyName, _KeyValue, _Item, out _ReturnItem, _ReturnItemBehaviour, null, _bOverrideIfExist, _ErrorMessageAction);
         }
 
         /// <summary>
@@ -495,7 +495,7 @@ namespace CloudServiceUtilities.DatabaseServices
            DatabaseAttributeCondition _ConditionExpression = null,
            Action<string> _ErrorMessageAction = null)
         {
-            return PutOrUpdateItem(EPutOrUpdateItemType.UpdateItem, _Table, _KeyName, _KeyValue, _UpdateItem, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, _ErrorMessageAction);
+            return PutOrUpdateItem(EPutOrUpdateItemType.UpdateItem, _Table, _KeyName, _KeyValue, _UpdateItem, out _ReturnItem, _ReturnItemBehaviour, _ConditionExpression, false, _ErrorMessageAction);
         }
 
         private enum EPutOrUpdateItemType
@@ -511,7 +511,8 @@ namespace CloudServiceUtilities.DatabaseServices
             JObject _NewItem, 
             out JObject _ReturnItem, 
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, 
-            DatabaseAttributeCondition _ConditionExpression = null,
+            DatabaseAttributeCondition _IfUpdate_ConditionExpression = null,
+            bool _IfPut_ShouldOverrideIfExist = false,
             Action<string> _ErrorMessageAction = null)
         {
             _ReturnItem = null;
@@ -535,31 +536,18 @@ namespace CloudServiceUtilities.DatabaseServices
                         {
                             if (!GetItemInTransaction(Transaction, Factory, _KeyName, _KeyValue, out ReturnedPreOperationObject, _ErrorMessageAction))
                             {
-                                _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: GetItemInTransaction failed.");
+                                _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: GetItemInTransaction failed (1).");
                                 return false;
                             }
-                        }
 
-                        if (_ConditionExpression != null)
-                        {
-                            //If it's PutItem, GetItemInTransaction has not been called yet.
-                            if (_PutOrUpdateItemType == EPutOrUpdateItemType.PutItem)
+                            if (_IfUpdate_ConditionExpression != null)
                             {
-                                if (!GetItemInTransaction(Transaction, Factory, _KeyName, _KeyValue, out ReturnedPreOperationObject, _ErrorMessageAction))
+                                if (!ConditionCheck(ReturnedPreOperationObject, _KeyName, _IfUpdate_ConditionExpression, _ErrorMessageAction))
                                 {
-                                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: GetItemInTransaction failed.");
                                     return false;
                                 }
                             }
 
-                            if (!ConditionCheck(ReturnedPreOperationObject, _KeyName, _ConditionExpression, _ErrorMessageAction))
-                            {
-                                return false;
-                            }
-                        }
-
-                        if (_PutOrUpdateItemType == EPutOrUpdateItemType.UpdateItem)
-                        {
                             if (ReturnedPreOperationObject != null)
                             {
                                 var CopyObject = new JObject(ReturnedPreOperationObject);
@@ -570,6 +558,21 @@ namespace CloudServiceUtilities.DatabaseServices
                                 NewItem = CopyObject;
                             }
                         }
+                        else //if (_PutOrUpdateItemType == EPutOrUpdateItemType.PutItem)
+                        {
+                            if (!_IfPut_ShouldOverrideIfExist)
+                            {
+                                if (GetItemInTransaction(Transaction, Factory, _KeyName, _KeyValue, out ReturnedPreOperationObject, _ErrorMessageAction))
+                                {
+                                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: GetItemInTransaction failed (2).");
+                                    return false;
+                                }
+                                if (ReturnedPreOperationObject != null)
+                                {
+                                    return false;
+                                }
+                            }
+                        }
 
                         if (_ReturnItemBehaviour == EReturnItemBehaviour.ReturnAllOld)
                         {
@@ -577,7 +580,7 @@ namespace CloudServiceUtilities.DatabaseServices
                             {
                                 if (!GetItemInTransaction(Transaction, Factory, _KeyName, _KeyValue, out _ReturnItem, _ErrorMessageAction))
                                 {
-                                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: GetItemInTransaction failed.");
+                                    _ErrorMessageAction?.Invoke("DatabaseServiceGC->PutOrUpdateItem: GetItemInTransaction failed (3).");
                                     return false;
                                 }
                                 if (_ReturnItem == null)
