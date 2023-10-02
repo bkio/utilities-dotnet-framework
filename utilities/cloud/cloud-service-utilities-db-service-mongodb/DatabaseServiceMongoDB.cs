@@ -1031,6 +1031,7 @@ namespace CloudServiceUtilities.DatabaseServices
                 case BsonType.String:
                     return new PrimitiveType(_BsonValue.AsString);
                 case BsonType.Int32:
+                    return new PrimitiveType(_BsonValue.AsInt32);
                 case BsonType.Int64:
                     return new PrimitiveType(_BsonValue.AsInt64);
                 case BsonType.Double:
