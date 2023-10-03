@@ -337,7 +337,16 @@ namespace CloudServiceUtilities.DatabaseServices
                 {
                     _Result = FromEntityToJson(ReturnedEntity);
                     AddKeyToJson(_Result, _KeyName, _KeyValue);
-                    Utility.SortJObject(_Result, true);
+                    if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                    {
+                        Utility.SortJObject(
+                            _Result, 
+                            Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                    }
+                    else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                    {
+                        Utility.ConvertRoundFloatToIntAllInJObject(_Result);
+                    }
                 }
                 return true;
             }
@@ -411,7 +420,16 @@ namespace CloudServiceUtilities.DatabaseServices
                                 }
 
                                 AddKeyToJson(AsJson, KeyName, new PrimitiveType(KeyValue));
-                                Utility.SortJObject(AsJson, true);
+                                if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                                {
+                                    Utility.SortJObject(
+                                        AsJson,
+                                        Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                                }
+                                else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                                {
+                                    Utility.ConvertRoundFloatToIntAllInJObject(AsJson);
+                                }
 
                                 _Result.Add(AsJson);
                             }
@@ -448,7 +466,16 @@ namespace CloudServiceUtilities.DatabaseServices
             {
                 _Result = FromEntityToJson(ReturnedEntity);
                 AddKeyToJson(_Result, _KeyName, _KeyValue);
-                Utility.SortJObject(_Result, true);
+                if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                {
+                    Utility.SortJObject(
+                        _Result,
+                        Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                }
+                else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                {
+                    Utility.ConvertRoundFloatToIntAllInJObject(_Result);
+                }
             }
             return true;
         }
@@ -1221,7 +1248,16 @@ namespace CloudServiceUtilities.DatabaseServices
                                 AddKeyToJson(AsJson, KeyName, new PrimitiveType(KeyValue));
                                 if (_FilterCallback(AsJson))
                                 {
-                                    Utility.SortJObject(AsJson, true);
+                                    if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                                    {
+                                        Utility.SortJObject(
+                                            AsJson,
+                                            Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                                    }
+                                    else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                                    {
+                                        Utility.ConvertRoundFloatToIntAllInJObject(AsJson);
+                                    }
 
                                     _ReturnItem.Add(AsJson);
                                 }

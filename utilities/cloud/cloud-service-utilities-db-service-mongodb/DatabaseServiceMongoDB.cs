@@ -346,7 +346,16 @@ namespace CloudServiceUtilities.DatabaseServices
                                 _ErrorMessageAction?.Invoke($"[WARNING!] DatabaseServiceMongoDB->GetItems: TryGetElement {_KeyName} failed.");
                                 continue;
                             }
-                            Utility.SortJObject(CreatedJson, true);
+                            if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                            {
+                                Utility.SortJObject(
+                                    CreatedJson,
+                                    Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                            }
+                            else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                            {
+                                Utility.ConvertRoundFloatToIntAllInJObject(CreatedJson);
+                            }
                             _Result.Add(CreatedJson);
                         }
                     }
@@ -1003,7 +1012,16 @@ namespace CloudServiceUtilities.DatabaseServices
                                 break;
                             }
                         }
-                        Utility.SortJObject(CreatedJson, true);
+                        if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                        {
+                            Utility.SortJObject(
+                                CreatedJson,
+                                Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                        }
+                        else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                        {
+                            Utility.ConvertRoundFloatToIntAllInJObject(CreatedJson);
+                        }
                         TempResults.Add(CreatedJson);
                     });
 
@@ -1306,30 +1324,30 @@ namespace CloudServiceUtilities.DatabaseServices
             _Document.Remove("_id");
 
             //Set strict mode to convert numbers to valid json otherwise it generates something like NumberLong(5) where you expect a 5
-            var JsonWriterSettings = new JsonWriterSettings { OutputMode = JsonOutputMode.Strict };
-
-            return JObject.Parse(_Document.ToJson(JsonWriterSettings));
+            return JObject.Parse(_Document.ToJson(new JsonWriterSettings { OutputMode = JsonOutputMode.Strict }));
         }
 
         private BsonDocument JObjectToBson(JObject _JsonObject)
         {
             // https://stackoverflow.com/a/62104268
             //Write JObject to MemoryStream
-            using var stream = new MemoryStream();
-            using (var writer = new BsonDataWriter(stream) { CloseOutput = false })
+            using (var Strm = new MemoryStream())
             {
-                _JsonObject.WriteTo(writer);
-            }
-            stream.Position = 0; //for reading the steam immediately 
+                using (var Writer = new BsonDataWriter(Strm) { CloseOutput = false })
+                {
+                    _JsonObject.WriteTo(Writer);
+                }
+                Strm.Position = 0; //for reading the steam immediately 
 
-            //Read the object from MemoryStream
-            BsonDocument bsonData;
-            using (var reader = new BsonBinaryReader(stream))
-            {
-                var context = BsonDeserializationContext.CreateRoot(reader);
-                bsonData = BsonDocumentSerializer.Instance.Deserialize(context);
+                //Read the object from MemoryStream
+                BsonDocument BData;
+                using (var Reader = new BsonBinaryReader(Strm))
+                {
+                    BData = BsonDocumentSerializer.Instance.Deserialize(
+                        BsonDeserializationContext.CreateRoot(Reader));
+                }
+                return BData;
             }
-            return bsonData;
         }
 
         private static BsonDocument FindOne(IMongoCollection<BsonDocument> _Table, FilterDefinition<BsonDocument> _Filter)

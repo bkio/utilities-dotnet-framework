@@ -190,7 +190,16 @@ namespace CloudServiceUtilities.DatabaseServices
                             //Convert to string and parse as JObject
                             _Result = JObject.Parse(ReturnedDocument.ToJson());
                             AddKeyToJson(_Result, _KeyName, _KeyValue);
-                            Utility.SortJObject(_Result, true);
+                            if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                            {
+                                Utility.SortJObject(
+                                    _Result,
+                                    Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                            }
+                            else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                            {
+                                Utility.ConvertRoundFloatToIntAllInJObject(_Result);
+                            }
                         }
                     }
                 }
@@ -263,7 +272,16 @@ namespace CloudServiceUtilities.DatabaseServices
                                 //Convert to string and parse as JObject
                                 var AsJObject = JObject.Parse(ReturnedDocument.ToJson());
                                 AddKeyToJson(AsJObject, _KeyName, _KeyValues[i]);
-                                Utility.SortJObject(AsJObject, true);
+                                if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                                {
+                                    Utility.SortJObject(
+                                        AsJObject,
+                                        Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                                }
+                                else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                                {
+                                    Utility.ConvertRoundFloatToIntAllInJObject(AsJObject);
+                                }
 
                                 _Result.Add(AsJObject);
                             }
@@ -379,7 +397,16 @@ namespace CloudServiceUtilities.DatabaseServices
                             {
                                 //Convert to string and parse as JObject
                                 _ReturnItem = JObject.Parse(ReturnedDocument.ToJson());
-                                Utility.SortJObject(_ReturnItem, true);
+                                if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                                {
+                                    Utility.SortJObject(
+                                        _ReturnItem,
+                                        Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                                }
+                                else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                                {
+                                    Utility.ConvertRoundFloatToIntAllInJObject(_ReturnItem);
+                                }
                                 return true;
                             }
                             else
@@ -499,7 +526,16 @@ namespace CloudServiceUtilities.DatabaseServices
                             {
                                 //Convert to string and parse as JObject
                                 _ReturnItem = JObject.Parse(ReturnedDocument.ToJson());
-                                Utility.SortJObject(_ReturnItem, true);
+                                if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                                {
+                                    Utility.SortJObject(
+                                        _ReturnItem,
+                                        Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                                }
+                                else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                                {
+                                    Utility.ConvertRoundFloatToIntAllInJObject(_ReturnItem);
+                                }
                                 return true;
                             }
                             else
@@ -672,7 +708,16 @@ namespace CloudServiceUtilities.DatabaseServices
                         if (Response != null && Response.Attributes != null)
                         {
                             _ReturnItem = JObject.Parse(Document.FromAttributeMap(Response.Attributes).ToJson());
-                            Utility.SortJObject(_ReturnItem, true);
+                            if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                            {
+                                Utility.SortJObject(
+                                    _ReturnItem,
+                                    Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                            }
+                            else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                            {
+                                Utility.ConvertRoundFloatToIntAllInJObject(_ReturnItem);
+                            }
                         }
                         else
                         {
@@ -839,7 +884,16 @@ namespace CloudServiceUtilities.DatabaseServices
                         if (Response != null && Response.Attributes != null)
                         {
                             _ReturnItem = JObject.Parse(Document.FromAttributeMap(Response.Attributes).ToJson());
-                            Utility.SortJObject(_ReturnItem, true);
+                            if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                            {
+                                Utility.SortJObject(
+                                    _ReturnItem,
+                                    Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                            }
+                            else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                            {
+                                Utility.ConvertRoundFloatToIntAllInJObject(_ReturnItem);
+                            }
                         }
                         else
                         {
@@ -1032,7 +1086,16 @@ namespace CloudServiceUtilities.DatabaseServices
                         {
                             //Convert to string and parse as JObject
                             _ReturnItem = JObject.Parse(ReturnedDocument.ToJson());
-                            Utility.SortJObject(_ReturnItem, true);
+                            if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                            {
+                                Utility.SortJObject(
+                                    _ReturnItem,
+                                    Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                            }
+                            else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                            {
+                                Utility.ConvertRoundFloatToIntAllInJObject(_ReturnItem);
+                            }
                             return true;
                         }
                         else
@@ -1138,7 +1201,16 @@ namespace CloudServiceUtilities.DatabaseServices
                                 foreach (var Document in DocumentList)
                                 {
                                     var CreatedJson = JObject.Parse(Document.ToJson());
-                                    Utility.SortJObject(CreatedJson, true);
+                                    if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                                    {
+                                        Utility.SortJObject(
+                                            CreatedJson,
+                                            Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                                    }
+                                    else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                                    {
+                                        Utility.ConvertRoundFloatToIntAllInJObject(CreatedJson);
+                                    }
                                     TempResults.Add(CreatedJson);
                                 }
                             }

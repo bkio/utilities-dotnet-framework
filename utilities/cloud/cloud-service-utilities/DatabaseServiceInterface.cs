@@ -30,6 +30,22 @@ namespace CloudServiceUtilities
         ArrayElementNotExist
     };
 
+    public enum EAutoSortArrays
+    {
+        No,
+        Yes
+    };
+    public enum EAutoConvertRoundableFloatToInt
+    {
+        No,
+        Yes
+    };
+    public class DatabaseOptions
+    {
+        public EAutoSortArrays AutoSortArrays = EAutoSortArrays.No;
+        public EAutoConvertRoundableFloatToInt AutoConvertRoundableFloatToInt = EAutoConvertRoundableFloatToInt.No;
+    }
+
     public abstract class DatabaseAttributeCondition
     {
         public readonly EDatabaseAttributeConditionType AttributeConditionType;
@@ -77,6 +93,13 @@ namespace CloudServiceUtilities
                 Destination[_KeyName] = FromPrimitiveTypeToJToken(_KeyValue);
             }
         }
+
+        public void SetOptions(DatabaseOptions _NewOptions)
+        {
+            Options = _NewOptions;
+        }
+        protected DatabaseOptions Options = new DatabaseOptions();
+
     }
 
     /// <summary>
