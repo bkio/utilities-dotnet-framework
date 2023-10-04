@@ -236,6 +236,58 @@ namespace CloudServiceUtilities.DatabaseServices
 
         /// <summary>
         /// 
+        /// <para>DoesItemExistWhichSatisfyOptionalCondition</para>
+        /// 
+        /// <para>Checks the existence of an item with given key. Also checks if condition is satisfied if given.</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.DoesItemExistWhichSatisfyOptionalCondition"/> for detailed documentation</para>
+        /// 
+        /// <returns> Returns:                                      Operation success</returns>
+        /// 
+        /// </summary>
+        public bool DoesItemExistWhichSatisfyOptionalCondition(
+            string _Table,
+            string _KeyName,
+            PrimitiveType _KeyValue,
+            out bool _bExistAndConditionSatisfied,
+            DatabaseAttributeCondition _OptionalConditionExpression = null,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _bExistAndConditionSatisfied = false;
+
+            var Table = GetTable(_Table);
+            if (Table == null) return false;
+
+            try
+            {
+                var Filter = BuildEqFilter(_KeyName, _KeyValue);
+
+                BsonDocument Document = null;
+
+                if (_OptionalConditionExpression != null)
+                {
+                    var FirstFilter = (_OptionalConditionExpression as DatabaseAttributeConditionMongo).Filter;
+                    var FinalFilter = Builders<BsonDocument>.Filter.And(Filter, FirstFilter);
+
+                    Document = FindOne(Table, FinalFilter);
+                }
+                else
+                {
+                    Document = FindOne(Table, Filter);
+                }
+
+                _bExistAndConditionSatisfied = Document != null;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->DoesItemExistWhichSatisfyOptionalCondition: {ex.Message} \n {ex.StackTrace}");
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 
         /// <para>GetItem</para>
         /// 
         /// <para>Gets an item from a table, if _ValuesToGet is null; will retrieve all.</para>

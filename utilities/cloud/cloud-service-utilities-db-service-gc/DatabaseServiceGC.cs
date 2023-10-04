@@ -303,6 +303,65 @@ namespace CloudServiceUtilities.DatabaseServices
 
         /// <summary>
         /// 
+        /// <para>DoesItemExistWhichSatisfyOptionalCondition</para>
+        /// 
+        /// <para>Checks the existence of an item with given key. Also checks if condition is satisfied if given.</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.DoesItemExistWhichSatisfyOptionalCondition"/> for detailed documentation</para>
+        /// 
+        /// <returns> Returns:                                      Operation success</returns>
+        /// 
+        /// </summary>
+        public bool DoesItemExistWhichSatisfyOptionalCondition(
+            string _Table, 
+            string _KeyName, 
+            PrimitiveType _KeyValue, 
+            out bool _bExistAndConditionSatisfied, 
+            DatabaseAttributeCondition _OptionalConditionExpression = null, 
+            Action<string> _ErrorMessageAction = null)
+        {
+            _bExistAndConditionSatisfied = false;
+
+            if (LoadStoreAndGetKindKeyFactory(_Table, out KeyFactory Factory, _ErrorMessageAction))
+            {
+                Entity ReturnedEntity = null;
+                try
+                {
+                    ReturnedEntity = DSDB.Lookup(Factory.CreateKey(GetFinalKeyFromNameValue(_KeyName, _KeyValue)));
+                }
+                catch (Exception e)
+                {
+                    _ErrorMessageAction?.Invoke($"DatabaseServiceGC->DoesItemExistWhichSatisfyOptionalCondition: Exception: {e.Message}");
+                    return false;
+                }
+
+                if (ReturnedEntity != null & _OptionalConditionExpression != null)
+                {
+                    var EntityJson = FromEntityToJson(ReturnedEntity);
+                    AddKeyToJson(EntityJson, _KeyName, _KeyValue);
+                    if (Options.AutoSortArrays == EAutoSortArrays.Yes)
+                    {
+                        Utility.SortJObject(
+                            EntityJson,
+                            Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes);
+                    }
+                    else if (Options.AutoConvertRoundableFloatToInt == EAutoConvertRoundableFloatToInt.Yes)
+                    {
+                        Utility.ConvertRoundFloatToIntAllInJObject(EntityJson);
+                    }
+
+                    _bExistAndConditionSatisfied = ConditionCheck(EntityJson, _KeyName, _OptionalConditionExpression, _ErrorMessageAction);
+                    return true;
+                }
+
+                _bExistAndConditionSatisfied = ReturnedEntity != null;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 
         /// <para>GetItem</para>
         /// 
         /// <para>Gets an item from a table, if _ValuesToGet is null; will retrieve all.</para>

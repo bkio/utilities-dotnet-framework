@@ -133,6 +133,93 @@ namespace CloudServiceUtilities.DatabaseServices
 
         /// <summary>
         /// 
+        /// <para>DoesItemExistWhichSatisfyOptionalCondition</para>
+        /// 
+        /// <para>Checks the existence of an item with given key. Also checks if condition is satisfied if given.</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.DoesItemExistWhichSatisfyOptionalCondition"/> for detailed documentation</para>
+        /// 
+        /// <returns> Returns:                                      Operation success</returns>
+        /// 
+        /// </summary>
+        public bool DoesItemExistWhichSatisfyOptionalCondition(
+            string _Table,
+            string _KeyName,
+            PrimitiveType _KeyValue,
+            out bool _bExistAndConditionSatisfied,
+            DatabaseAttributeCondition _OptionalConditionExpression = null,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _bExistAndConditionSatisfied = false;
+
+            var Request = new QueryRequest
+            {
+                TableName = _Table,
+                KeyConditionExpression = $"{_KeyName} = :key_val",
+                ExpressionAttributeValues = new Dictionary<string, AttributeValue>(),
+                ProjectionExpression = _KeyName, //What to get
+                ConsistentRead = true
+            };
+            if (_OptionalConditionExpression != null)
+            {
+                var BuiltCondition = _OptionalConditionExpression.GetBuiltCondition();
+
+                Request.KeyConditionExpression += $" and {BuiltCondition.Item1}";
+                if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.Integer)
+                {
+                    Request.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = new AttributeValue { N = BuiltCondition.Item2.Item2.AsInteger.ToString() };
+                }
+                else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.Double)
+                {
+                    Request.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = new AttributeValue { N = BuiltCondition.Item2.Item2.AsDouble.ToString() };
+                }
+                else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.String)
+                {
+                    Request.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = new AttributeValue { S = BuiltCondition.Item2.Item2.AsString };
+                }
+                else if (BuiltCondition.Item2.Item2.Type == EPrimitiveTypeEnum.ByteArray)
+                {
+                    Request.ExpressionAttributeValues[BuiltCondition.Item2.Item1] = new AttributeValue { S = BuiltCondition.Item2.Item2.ToString() };
+                }
+            }
+
+            if (_KeyValue.Type == EPrimitiveTypeEnum.Integer)
+            {
+                Request.ExpressionAttributeValues[":key_val"] = new AttributeValue { N = _KeyValue.AsInteger.ToString() };
+            }
+            else if (_KeyValue.Type == EPrimitiveTypeEnum.Double)
+            {
+                Request.ExpressionAttributeValues[":key_val"] = new AttributeValue { N = _KeyValue.AsDouble.ToString() };
+            }
+            else if (_KeyValue.Type == EPrimitiveTypeEnum.String)
+            {
+                Request.ExpressionAttributeValues[":key_val"] = new AttributeValue { S = _KeyValue.AsString };
+            }
+            else if (_KeyValue.Type == EPrimitiveTypeEnum.ByteArray)
+            {
+                Request.ExpressionAttributeValues[":key_val"] = new AttributeValue { S = _KeyValue.ToString() };
+            }
+
+            try
+            {
+                using (var _Query = DynamoDBClient.QueryAsync(Request))
+                {
+                    _Query.Wait();
+
+                    var ReturnedDocument = _Query.Result;
+                    _bExistAndConditionSatisfied = ReturnedDocument != null && ReturnedDocument.Count > 0;
+                }
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"DatabaseServiceAWS->DoesItemExistWhichSatisfyOptionalCondition: {e.Message}, Trace: {e.StackTrace}");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 
         /// <para>GetItem</para>
         /// 
         /// <para>Gets an item from a table, if _ValuesToGet is null; will retrieve all.</para>

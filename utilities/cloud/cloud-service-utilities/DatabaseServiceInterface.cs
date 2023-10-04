@@ -129,6 +129,31 @@ namespace CloudServiceUtilities
 
         /// <summary>
         /// 
+        /// <para>DoesItemExistWhichSatisfyOptionalCondition</para>
+        /// 
+        /// <para>Checks the existence of an item with given key. Also checks if condition is satisfied if given.</para>
+        /// 
+        /// <para>Parameters:</para>
+        /// <para><paramref name="_Table"/>                         Table name</para>
+        /// <para><paramref name="_KeyName"/>                       Name of the key of item</para>
+        /// <para><paramref name="_KeyValue"/>                      Value of the key of item</para>
+        /// <para><paramref name="_bExistAndConditionSatisfied"/>   Result, if exist (and satisfies condition) returns true</para>
+        /// <para><paramref name="_OptionalConditionExpression"/>   Optional condition expression</para>
+        /// <para><paramref name="_ErrorMessageAction"/>            Error messages will be pushed to this action</para>
+        /// 
+        /// <returns> Returns:                                      Operation success</returns>
+        /// 
+        /// </summary>
+        bool DoesItemExistWhichSatisfyOptionalCondition(
+            string _Table,
+            string _KeyName,
+            PrimitiveType _KeyValue,
+            out bool _bExistAndConditionSatisfied,
+            DatabaseAttributeCondition _OptionalConditionExpression = null,
+            Action<string> _ErrorMessageAction = null);
+
+        /// <summary>
+        /// 
         /// <para>GetItem</para>
         /// 
         /// <para>Gets an item from a table, if _ValuesToGet is null; will retrieve all.</para>
