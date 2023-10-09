@@ -328,9 +328,12 @@ namespace WebServiceUtilities
                                     // In case its not closed.
                                     try
                                     {
-                                        using (var CloseTask = WS.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Connection closed.", CancellationToken.None))
+                                        if (WS != null)
                                         {
-                                            CloseTask.Wait();
+                                            using (var CloseTask = WS.CloseOutputAsync(WebSocketCloseStatus.NormalClosure, "Connection closed.", CancellationToken.None))
+                                            {
+                                                CloseTask.Wait();
+                                            }
                                         }
                                     }
                                     catch (Exception) { }
