@@ -86,7 +86,7 @@ namespace CloudServiceUtilities
             out string _SignedUrl,
             string _BucketName,
             string _KeyInBucket,
-            string _ContentType,
+            string _ContentType = null,
             int _URLValidForMinutes = 60,
             Action<string> _ErrorMessageAction = null,
             bool _bSupportResumable = false);

@@ -355,7 +355,7 @@ namespace CloudServiceUtilities.FileServices
             out string _SignedUrl,
             string _BucketName,
             string _KeyInBucket,
-            string _ContentType,
+            string _ContentType = null,
             int _URLValidForMinutes = 60,
             Action<string> _ErrorMessageAction = null,
             bool _bSupportResumable = false)
@@ -364,10 +364,11 @@ namespace CloudServiceUtilities.FileServices
             {                  
                 var Signer = UrlSigner.FromCredential(CredentialScoped);
 
-                var SupportedHeaders = new Dictionary<string, IEnumerable<string>>
+                var SupportedHeaders = new Dictionary<string, IEnumerable<string>>();
+                if (_ContentType != null)
                 {
-                    ["Content-Type"] = new[] { _ContentType }
-                };
+                    SupportedHeaders.Add("Content-Type", new[] { _ContentType });
+                }
                 if (_bSupportResumable)
                 {
                     SupportedHeaders.Add("x-goog-resumable", new[] { "start" });
@@ -376,8 +377,11 @@ namespace CloudServiceUtilities.FileServices
                 UrlSigner.RequestTemplate Template = UrlSigner.RequestTemplate
                 .FromBucket(_BucketName)
                 .WithObjectName(_KeyInBucket)
-                .WithHttpMethod(_bSupportResumable ? HttpMethod.Post : HttpMethod.Put)
-                .WithContentHeaders(SupportedHeaders);
+                .WithHttpMethod(_bSupportResumable ? HttpMethod.Post : HttpMethod.Put);
+                if (SupportedHeaders.Count > 0)
+                {
+                    Template = Template.WithContentHeaders(SupportedHeaders);
+                }
 
                 _SignedUrl = Signer.Sign(Template, UrlSigner.Options.FromDuration(TimeSpan.FromMinutes(_URLValidForMinutes)));
             }
