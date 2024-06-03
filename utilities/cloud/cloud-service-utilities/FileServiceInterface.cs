@@ -77,6 +77,7 @@ namespace CloudServiceUtilities
         /// <para><paramref name="_ContentType"/>                 Http content type of the file</para>
         /// <para><paramref name="_URLValidForMinutes"/>          For how long url will remain valid</para>
         /// <para><paramref name="_ErrorMessageAction"/>          Error messages will be pushed to this action</para>
+        /// <para><paramref name="_bSupportResumable"/>           Support resumable upload</para>
         ///
         /// <returns>                                             Returns: Operation success </returns>
         ///
@@ -87,7 +88,8 @@ namespace CloudServiceUtilities
             string _KeyInBucket,
             string _ContentType,
             int _URLValidForMinutes = 60,
-            Action<string> _ErrorMessageAction = null);
+            Action<string> _ErrorMessageAction = null,
+            bool _bSupportResumable = false);
 
         /// <summary>
         ///

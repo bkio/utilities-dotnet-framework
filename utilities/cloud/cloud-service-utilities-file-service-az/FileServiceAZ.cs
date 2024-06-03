@@ -198,7 +198,7 @@ namespace CloudServiceUtilities.FileServices
         /// <para>Check <seealso cref="IFileServiceInterface.CreateSignedURLForUpload"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool CreateSignedURLForUpload(out string _SignedUrl, string _BucketName, string _KeyInBucket, string _ContentType, int _URLValidForMinutes = 60, Action<string> _ErrorMessageAction = null)
+        public bool CreateSignedURLForUpload(out string _SignedUrl, string _BucketName, string _KeyInBucket, string _ContentType, int _URLValidForMinutes = 60, Action<string> _ErrorMessageAction = null, bool _bSupportResumable = false)
         {
             try
             {

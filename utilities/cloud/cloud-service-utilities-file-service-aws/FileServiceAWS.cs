@@ -886,7 +886,8 @@ namespace CloudServiceUtilities.FileServices
             string _KeyInBucket,
             string _ContentType,
             int _URLValidForMinutes = 60,
-            Action<string> _ErrorMessageAction = null)
+            Action<string> _ErrorMessageAction = null,
+            bool _bSupportResumable = false)
         {
             var PreSignedRequest = new GetPreSignedUrlRequest()
             {
