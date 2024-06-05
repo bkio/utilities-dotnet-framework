@@ -999,6 +999,7 @@ namespace CloudServiceUtilities.DatabaseServices
             string[] _PossibleKeyNames,
             int _PageNumber,
             int _PageSize,
+            bool _bPaginateBackwards,
             out List<JObject> _ReturnItem,
             bool _RetrieveTotalElementsFound,
             out long _TotalElementFound,
@@ -1018,15 +1019,21 @@ namespace CloudServiceUtilities.DatabaseServices
 
             try
             {
+                _RetrieveTotalElementsFound |= _bPaginateBackwards;
                 if (_RetrieveTotalElementsFound)
                 {
                     _TotalElementFound = Table.CountDocuments(Filter);
                 }
 
+                if (_bPaginateBackwards)
+                {
+                    var TotalPages = (int)Math.Ceiling((double)_TotalElementFound / _PageSize);
+                    _PageNumber = TotalPages - _PageNumber + 1;
+                }
+
                 using (var ScanTask = Table.Find(Filter).Skip((_PageNumber - 1) * _PageSize).Limit(_PageSize).ToListAsync())
                 {
                     ScanTask.Wait();
-
                     ReturnedSearch.AddRange(ScanTask.Result);
                 }
             }
@@ -1106,6 +1113,7 @@ namespace CloudServiceUtilities.DatabaseServices
             DatabaseAttributeCondition _FilterBy,
             int _PageNumber,
             int _PageSize,
+            bool _bPaginateBackwards,
             out List<JObject> _ReturnItem,
             bool _RetrieveTotalElementsFound,
             out long _TotalElementFound,
@@ -1131,9 +1139,16 @@ namespace CloudServiceUtilities.DatabaseServices
 
             try
             {
+                _RetrieveTotalElementsFound |= _bPaginateBackwards;
                 if (_RetrieveTotalElementsFound)
                 {
                     _TotalElementFound = Table.CountDocuments(Filter);
+                }
+
+                if (_bPaginateBackwards)
+                {
+                    var TotalPages = (int)Math.Ceiling((double)_TotalElementFound / _PageSize);
+                    _PageNumber = TotalPages - _PageNumber + 1;
                 }
 
                 using (var ScanTask = Table.Find(Filter).Skip((_PageNumber - 1) * _PageSize).Limit(_PageSize).ToListAsync())

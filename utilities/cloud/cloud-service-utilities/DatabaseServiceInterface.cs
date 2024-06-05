@@ -72,7 +72,7 @@ namespace CloudServiceUtilities
     {
         protected DatabaseServiceBase() {}
 
-        protected Newtonsoft.Json.Linq.JToken FromPrimitiveTypeToJToken(PrimitiveType _Primitive)
+        protected JToken FromPrimitiveTypeToJToken(PrimitiveType _Primitive)
         {
             switch (_Primitive.Type)
             {
@@ -87,7 +87,7 @@ namespace CloudServiceUtilities
             }
         }
 
-        protected void AddKeyToJson(Newtonsoft.Json.Linq.JObject Destination, string _KeyName, PrimitiveType _KeyValue)
+        protected void AddKeyToJson(JObject Destination, string _KeyName, PrimitiveType _KeyValue)
         {
             if (Destination != null && !Destination.ContainsKey(_KeyName))
             {
@@ -175,7 +175,7 @@ namespace CloudServiceUtilities
             string _KeyName,
             PrimitiveType _KeyValue,
             string[] _ValuesToGet,
-            out Newtonsoft.Json.Linq.JObject _Result,
+            out JObject _Result,
             Action<string> _ErrorMessageAction = null);
 
         /// <summary>
@@ -198,7 +198,7 @@ namespace CloudServiceUtilities
             string _Table,
             string _KeyName,
             PrimitiveType[] _KeyValues,
-            out List<Newtonsoft.Json.Linq.JObject> _Result,
+            out List<JObject> _Result,
             Action<string> _ErrorMessageAction = null);
 
         /// <summary>
@@ -224,8 +224,8 @@ namespace CloudServiceUtilities
             string _Table,
             string _KeyName,
             PrimitiveType _KeyValue,
-            Newtonsoft.Json.Linq.JObject _Item,
-            out Newtonsoft.Json.Linq.JObject _ReturnItem,
+            JObject _Item,
+            out JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
             bool _bOverrideIfExist = false,
             Action<string> _ErrorMessageAction = null);
@@ -253,8 +253,8 @@ namespace CloudServiceUtilities
             string _Table,
             string _KeyName,
             PrimitiveType _KeyValue,
-            Newtonsoft.Json.Linq.JObject _UpdateItem,
-            out Newtonsoft.Json.Linq.JObject _ReturnItem,
+            JObject _UpdateItem,
+            out JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
             DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null);
@@ -285,7 +285,7 @@ namespace CloudServiceUtilities
             PrimitiveType _KeyValue, 
             string _ElementName,
             PrimitiveType[] _ElementValueEntries, 
-            out Newtonsoft.Json.Linq.JObject _ReturnItem, 
+            out JObject _ReturnItem, 
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn, 
             DatabaseAttributeCondition _ConditionExpression = null, 
             Action<string> _ErrorMessageAction = null);
@@ -316,7 +316,7 @@ namespace CloudServiceUtilities
             PrimitiveType _KeyValue,
             string _ElementName,
             PrimitiveType[] _ElementValueEntries,
-            out Newtonsoft.Json.Linq.JObject _ReturnItem,
+            out JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
             DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null);
@@ -374,7 +374,7 @@ namespace CloudServiceUtilities
             string _Table,
             string _KeyName,
             PrimitiveType _KeyValue,
-            out Newtonsoft.Json.Linq.JObject _ReturnItem,
+            out JObject _ReturnItem,
             EReturnItemBehaviour _ReturnItemBehaviour = EReturnItemBehaviour.DoNotReturn,
             DatabaseAttributeCondition _ConditionExpression = null,
             Action<string> _ErrorMessageAction = null);
@@ -397,7 +397,7 @@ namespace CloudServiceUtilities
         bool ScanTable(
             string _Table,
             string[] _PossibleKeyNames,
-            out List<Newtonsoft.Json.Linq.JObject> _ReturnItem,
+            out List<JObject> _ReturnItem,
             Action<string> _ErrorMessageAction = null);
 
 
@@ -412,6 +412,7 @@ namespace CloudServiceUtilities
         /// <para><paramref name="_PossibleKeyNames"/>              Names of the keys in table</para>
         /// <para><paramref name="_PageNumber"/>                    Which page to retrieve</para>
         /// <para><paramref name="_PageSize"/>                      Number of items in a page (limit)</para>
+        /// <para><paramref name="_bPaginateBackwards"/>            Whether pagination is calculated from backwards instead of forward</para>
         /// <para><paramref name="_ReturnItem"/>                    In case item exists, fills his variable with returned item</para>
         /// <para><paramref name="_RetrieveTotalElementsFound"/>    If true, _TotalElementFound will be populated.</para>
         /// <para><paramref name="_TotalElementFound"/>             Number of total elements (if _RetrieveTotalElementsFound is true, otherwise -1)</para>
@@ -425,6 +426,7 @@ namespace CloudServiceUtilities
             string[] _PossibleKeyNames,
             int _PageNumber,
             int _PageSize,
+            bool _bPaginateBackwards,
             out List<JObject> _ReturnItem,
             bool _RetrieveTotalElementsFound,
             out long _TotalElementFound,
@@ -465,6 +467,7 @@ namespace CloudServiceUtilities
         /// <para><paramref name="_FilterBy"/>                      Filter each item to be returned by the scan operation</para>
         /// <para><paramref name="_PageNumber"/>                    Which page to retrieve</para>
         /// <para><paramref name="_PageSize"/>                      Number of items in a page (limit)</para>
+        /// <para><paramref name="_bPaginateBackwards"/>            Whether pagination is calculated from backwards instead of forward</para>
         /// <para><paramref name="_ReturnItem"/>                    In case item exists, fills his variable with returned item</para>
         /// <para><paramref name="_RetrieveTotalElementsFound"/>    If true, _TotalElementFound will be populated.</para>
         /// <para><paramref name="_TotalElementFound"/>             Number of total elements (if _RetrieveTotalElementsFound is true, otherwise -1)</para>
@@ -479,6 +482,7 @@ namespace CloudServiceUtilities
             DatabaseAttributeCondition _FilterBy,
             int _PageNumber,
             int _PageSize,
+            bool _bPaginateBackwards,
             out List<JObject> _ReturnItem,
             bool _RetrieveTotalElementsFound,
             out long _TotalElementFound,
