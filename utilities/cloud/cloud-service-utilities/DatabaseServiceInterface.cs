@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using CommonUtilities;
+using Newtonsoft.Json.Linq;
 
 namespace CloudServiceUtilities
 {
@@ -399,6 +400,36 @@ namespace CloudServiceUtilities
             out List<Newtonsoft.Json.Linq.JObject> _ReturnItem,
             Action<string> _ErrorMessageAction = null);
 
+
+        /// <summary>
+        /// 
+        /// <para>ScanTable</para>
+        /// 
+        /// <para>Scans the table for attribute specified by _Key</para>
+        /// 
+        /// <para>Parameters:</para>
+        /// <para><paramref name="_Table"/>                         Table name</para>
+        /// <para><paramref name="_PossibleKeyNames"/>              Names of the keys in table</para>
+        /// <para><paramref name="_PageNumber"/>                    Which page to retrieve</para>
+        /// <para><paramref name="_PageSize"/>                      Number of items in a page (limit)</para>
+        /// <para><paramref name="_ReturnItem"/>                    In case item exists, fills his variable with returned item</para>
+        /// <para><paramref name="_RetrieveTotalElementsFound"/>    If true, _TotalElementFound will be populated.</para>
+        /// <para><paramref name="_TotalElementFound"/>             Number of total elements (if _RetrieveTotalElementsFound is true, otherwise -1)</para>
+        /// <para><paramref name="_ErrorMessageAction"/>            Error messages will be pushed to this action</para>
+        /// 
+        /// <returns> Returns:                                      Operation success</returns>
+        /// 
+        /// </summary>
+        bool ScanTable_Paginated(
+            string _Table,
+            string[] _PossibleKeyNames,
+            int _PageNumber,
+            int _PageSize,
+            out List<JObject> _ReturnItem,
+            bool _RetrieveTotalElementsFound,
+            out long _TotalElementFound,
+            Action<string> _ErrorMessageAction = null);
+
         /// <summary>
         /// 
         /// <para>ScanTableFilterBy</para>
@@ -419,7 +450,38 @@ namespace CloudServiceUtilities
             string _Table,
             string[] _PossibleKeyNames,
             DatabaseAttributeCondition _FilterBy,
-            out List<Newtonsoft.Json.Linq.JObject> _ReturnItem,
+            out List<JObject> _ReturnItem,
+            Action<string> _ErrorMessageAction = null);
+
+        /// <summary>
+        /// 
+        /// <para>ScanTableFilterBy</para>
+        /// 
+        /// <para>Scans the table for attribute specified by _Key, filtered by the _FilterBy condition</para>
+        /// 
+        /// <para>Parameters:</para>
+        /// <para><paramref name="_Table"/>                         Table name</para>
+        /// <para><paramref name="_PossibleKeyNames"/>              Names of the keys in table</para
+        /// <para><paramref name="_FilterBy"/>                      Filter each item to be returned by the scan operation</para>
+        /// <para><paramref name="_PageNumber"/>                    Which page to retrieve</para>
+        /// <para><paramref name="_PageSize"/>                      Number of items in a page (limit)</para>
+        /// <para><paramref name="_ReturnItem"/>                    In case item exists, fills his variable with returned item</para>
+        /// <para><paramref name="_RetrieveTotalElementsFound"/>    If true, _TotalElementFound will be populated.</para>
+        /// <para><paramref name="_TotalElementFound"/>             Number of total elements (if _RetrieveTotalElementsFound is true, otherwise -1)</para>
+        /// <para><paramref name="_ErrorMessageAction"/>            Error messages will be pushed to this action</para>
+        /// 
+        /// <returns> Returns:                                      Operation success</returns>
+        /// 
+        /// </summary>
+        bool ScanTableFilterBy_Paginated(
+            string _Table,
+            string[] _PossibleKeyNames,
+            DatabaseAttributeCondition _FilterBy,
+            int _PageNumber,
+            int _PageSize,
+            out List<JObject> _ReturnItem,
+            bool _RetrieveTotalElementsFound,
+            out long _TotalElementFound,
             Action<string> _ErrorMessageAction = null);
     }
 }

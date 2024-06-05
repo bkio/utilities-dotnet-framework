@@ -987,6 +987,60 @@ namespace CloudServiceUtilities.DatabaseServices
 
         /// <summary>
         /// 
+        /// <para>ScanTable_Paginated</para>
+        /// 
+        /// <para>Scans the table for attribute specified by _Key with pagination</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTable_Paginated"/> for detailed documentation</para>
+        /// 
+        /// </summary>
+        public bool ScanTable_Paginated(
+            string _Table,
+            string[] _PossibleKeyNames,
+            int _PageNumber,
+            int _PageSize,
+            out List<JObject> _ReturnItem,
+            bool _RetrieveTotalElementsFound,
+            out long _TotalElementFound,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _ReturnItem = null;
+            _TotalElementFound = -1;
+
+            var Table = GetTable(_Table);
+            if (Table == null) return false;
+
+            List<JObject> Results = new List<JObject>();
+
+            var Filter = Builders<BsonDocument>.Filter.Empty;
+
+            var ReturnedSearch = new List<BsonDocument>();
+
+            try
+            {
+                if (_RetrieveTotalElementsFound)
+                {
+                    _TotalElementFound = Table.CountDocuments(Filter);
+                }
+
+                using (var ScanTask = Table.Find(Filter).Skip((_PageNumber - 1) * _PageSize).Limit(_PageSize).ToListAsync())
+                {
+                    ScanTask.Wait();
+
+                    ReturnedSearch.AddRange(ScanTask.Result);
+                }
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->ScanTable: {e.Message}, Trace: {e.StackTrace}");
+                return false;
+            }
+
+            return Internal_ScanTable(_PossibleKeyNames, ReturnedSearch, out _ReturnItem, _ErrorMessageAction);
+        }
+
+        /// <summary>
+        /// 
         /// <para>ScanTableFilterBy</para>
         /// 
         /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTable"/> for detailed documentation</para>
@@ -1028,6 +1082,65 @@ namespace CloudServiceUtilities.DatabaseServices
                         }
                     }
                     while (ScanTask.Result.MoveNext());
+                }
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"DatabaseServiceMongoDB->ScanTableFilterBy: {e.Message}, Trace: {e.StackTrace}");
+                return false;
+            }
+
+            return Internal_ScanTable(_PossibleKeyNames, ReturnedSearch, out _ReturnItem, _ErrorMessageAction);
+        }
+
+        /// <summary>
+        /// 
+        /// <para>ScanTableFilterBy_Paginated</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTableFilterBy_Paginated"/> for detailed documentation</para>
+        /// 
+        /// </summary>
+        public bool ScanTableFilterBy_Paginated(
+            string _Table,
+            string[] _PossibleKeyNames,
+            DatabaseAttributeCondition _FilterBy,
+            int _PageNumber,
+            int _PageSize,
+            out List<JObject> _ReturnItem,
+            bool _RetrieveTotalElementsFound,
+            out long _TotalElementFound,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _TotalElementFound = -1;
+
+            if (_FilterBy == null)
+            {
+                return ScanTable(_Table, _PossibleKeyNames, out _ReturnItem, _ErrorMessageAction);
+            }
+
+            _ReturnItem = null;
+
+            var Table = GetTable(_Table);
+            if (Table == null) return false;
+
+            var Filter = (_FilterBy as DatabaseAttributeConditionMongo).Filter;
+
+            var Results = new List<JObject>();
+
+            var ReturnedSearch = new List<BsonDocument>();
+
+            try
+            {
+                if (_RetrieveTotalElementsFound)
+                {
+                    _TotalElementFound = Table.CountDocuments(Filter);
+                }
+
+                using (var ScanTask = Table.Find(Filter).Skip((_PageNumber - 1) * _PageSize).Limit(_PageSize).ToListAsync())
+                {
+                    ScanTask.Wait();
+
+                    ReturnedSearch.AddRange(ScanTask.Result);
                 }
             }
             catch (Exception e)

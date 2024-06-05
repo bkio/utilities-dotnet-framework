@@ -1220,6 +1220,28 @@ namespace CloudServiceUtilities.DatabaseServices
 
         /// <summary>
         /// 
+        /// <para>ScanTable_Paginated - NOT IMPLEMENTED YET</para>
+        /// 
+        /// <para>Scans the table for attribute specified by _Key with pagination</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTable_Paginated"/> for detailed documentation</para>
+        /// 
+        /// </summary>
+        public bool ScanTable_Paginated(
+            string _Table,
+            string[] _PossibleKeyNames,
+            int _PageNumber,
+            int _PageSize,
+            out List<JObject> _ReturnItem,
+            bool _RetrieveTotalElementsFound,
+            out long _TotalElementFound,
+            Action<string> _ErrorMessageAction = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// 
         /// <para>ScanTableFilterBy</para>
         /// 
         /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTable"/> for detailed documentation</para>
@@ -1237,6 +1259,27 @@ namespace CloudServiceUtilities.DatabaseServices
                 return ScanTable(_Table, _PossibleKeyNames, out _ReturnItem, _ErrorMessageAction);
             }
             return Internal_ScanTable(_Table, _PossibleKeyNames, out _ReturnItem, BuildConditionalExpression(_FilterBy), _ErrorMessageAction);
+        }
+
+        /// <summary>
+        /// 
+        /// <para>ScanTableFilterBy_Paginated - NOT IMPLEMENTED YET</para>
+        /// 
+        /// <para>Check <seealso cref="IDatabaseServiceInterface.ScanTableFilterBy_Paginated"/> for detailed documentation</para>
+        /// 
+        /// </summary>
+        public bool ScanTableFilterBy_Paginated(
+            string _Table,
+            string[] _PossibleKeyNames,
+            DatabaseAttributeCondition _FilterBy,
+            int _PageNumber,
+            int _PageSize,
+            out List<JObject> _ReturnItem,
+            bool _RetrieveTotalElementsFound,
+            out long _TotalElementFound,
+            Action<string> _ErrorMessageAction = null)
+        {
+            throw new NotImplementedException();
         }
 
         private bool Internal_ScanTable(
