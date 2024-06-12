@@ -128,6 +128,7 @@ namespace CloudServiceUtilities
         /// <para><paramref name="_KeyInBucket"/>                 Key to remote file relative to bucket</para>
         /// <para><paramref name="_URLValidForMinutes"/>          For how long url will remain valid</para>
         /// <para><paramref name="_ErrorMessageAction"/>          Error messages will be pushed to this action</para>
+        /// <para><paramref name="_bSupportRange"/>               Support partial download?</para>
         ///
         /// <returns>                                             Returns: Operation success </returns>
         ///
@@ -137,7 +138,8 @@ namespace CloudServiceUtilities
             string _BucketName,
             string _KeyInBucket,
             int _URLValidForMinutes = 1,
-            Action<string> _ErrorMessageAction = null);
+            Action<string> _ErrorMessageAction = null,
+            bool _bSupportRange = false);
 
         /// <summary>
         ///

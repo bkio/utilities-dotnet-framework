@@ -156,7 +156,13 @@ namespace CloudServiceUtilities.FileServices
         /// <para>Check <seealso cref="IFileServiceInterface.CreateSignedURLForDownload"/> for detailed documentation</para>
         /// 
         /// </summary>
-        public bool CreateSignedURLForDownload(out string _SignedUrl, string _BucketName, string _KeyInBucket, int _URLValidForMinutes = 1, Action<string> _ErrorMessageAction = null)
+        public bool CreateSignedURLForDownload(
+            out string _SignedUrl, 
+            string _BucketName, 
+            string _KeyInBucket, 
+            int _URLValidForMinutes = 1, 
+            Action<string> _ErrorMessageAction = null,
+            bool _bSupportRange = false)
         {
             try
             {
@@ -167,7 +173,7 @@ namespace CloudServiceUtilities.FileServices
                 {
                     BlobContainerName = _BucketName,
                     BlobName = _KeyInBucket,
-                    Resource = "b",
+                    Resource = "b"
                 };
 
                 SasBuilder.StartsOn = DateTimeOffset.UtcNow.AddMinutes(-60);
