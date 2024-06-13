@@ -408,27 +408,16 @@ namespace CloudServiceUtilities.FileServices
             string _BucketName,
             string _KeyInBucket,
             int _URLValidForMinutes = 1,
-            Action<string> _ErrorMessageAction = null,
-            bool _bSupportRange = false)
+            Action<string> _ErrorMessageAction = null)
         {
             try
             {
                 var Signer = UrlSigner.FromCredential(CredentialScoped);
 
-                var SupportedHeaders = new Dictionary<string, IEnumerable<string>>();
-                if (_bSupportRange)
-                {
-                    SupportedHeaders.Add("Range", new[] { "*" });
-                }
-
                 var Template = UrlSigner.RequestTemplate
                     .FromBucket(_BucketName)
                     .WithObjectName(_KeyInBucket)
                     .WithHttpMethod(HttpMethod.Get);
-                if (SupportedHeaders.Count > 0)
-                {
-                    Template = Template.WithRequestHeaders(SupportedHeaders);
-                }
                 
                 _SignedUrl = Signer.Sign(Template, UrlSigner.Options.FromDuration(TimeSpan.FromMinutes(_URLValidForMinutes)));
             }
