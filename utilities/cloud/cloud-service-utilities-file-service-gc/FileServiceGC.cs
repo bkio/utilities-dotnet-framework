@@ -427,7 +427,7 @@ namespace CloudServiceUtilities.FileServices
                     .WithHttpMethod(HttpMethod.Get);
                 if (SupportedHeaders.Count > 0)
                 {
-                    Template = Template.WithContentHeaders(SupportedHeaders);
+                    Template = Template.WithRequestHeaders(SupportedHeaders);
                 }
                 
                 _SignedUrl = Signer.Sign(Template, UrlSigner.Options.FromDuration(TimeSpan.FromMinutes(_URLValidForMinutes)));
