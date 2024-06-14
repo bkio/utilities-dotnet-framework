@@ -291,7 +291,7 @@ namespace CloudServiceUtilities.FileServices
             {
                 DOO = new DownloadObjectOptions()
                 {
-                    Range = new System.Net.Http.Headers.RangeHeaderValue((long)_StartIndex, (long)(_StartIndex + _Size))
+                    Range = new System.Net.Http.Headers.RangeHeaderValue((long)_StartIndex, (long)(_StartIndex + _Size - 1))
                 };
             }
 
