@@ -202,6 +202,7 @@ namespace CloudServiceUtilities.PubSubServices
         /// <para>Check <seealso cref="IPubSubServiceInterface.CustomPublish"/> for detailed documentation</para>
         ///
         /// </summary>
+        [Obsolete]
         public bool CustomPublish(
             string _CustomTopic,
             string _CustomMessage,
@@ -281,6 +282,7 @@ namespace CloudServiceUtilities.PubSubServices
         /// <para>Check <seealso cref="IPubSubServiceInterface.DeleteCustomTopicGlobally"/> for detailed documentation</para>
         ///
         /// </summary>
+        [Obsolete]
         public void DeleteCustomTopicGlobally(
             string _CustomTopic,
             Action<string> _ErrorMessageAction = null)

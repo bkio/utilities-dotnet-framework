@@ -14,8 +14,8 @@ using Azure.Core;
 using Microsoft.Azure.Management.EventGrid;
 using Microsoft.Rest;
 using CommonUtilities;
-using CloudServiceUtilities_BFileService_AZ;
-using CloudServiceUtilities_BFileService_AZ.Models;
+using CloudServiceUtilities_FileService_AZ;
+using CloudServiceUtilities_FileService_AZ.Models;
 
 namespace CloudServiceUtilities.FileServices
 {

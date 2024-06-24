@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using Microsoft.Rest;
 
-namespace CloudServiceUtilities_BFileService_AZ.Models
+namespace CloudServiceUtilities_FileService_AZ.Models
 {
     public class SystemTopicProperties
     {
@@ -28,19 +28,20 @@ namespace CloudServiceUtilities_BFileService_AZ.Models
         }
         public SystemTopic(
             string location, 
-            string id = default(string), 
-            string name = default(string), 
-            string type = default(string), 
-            IDictionary<string, string> tags = default(IDictionary<string, string>), 
-            string provisioningState = default(string), 
-            string source = default(string), 
-            string metricResourceId = default(string), 
-            string topicType = default(string))
+            string id = default, 
+            string name = default, 
+            string type = default, 
+            IDictionary<string, string> tags = default, 
+            string provisioningState = default, 
+            string source = default, 
+            string metricResourceId = default, 
+            string topicType = default)
         {
             Location = location;
             Id = id;
             Name = name;
             Type = type;
+            Tags = tags;
             Properties.MetricResourceId = metricResourceId;
             Properties.ProvisioningState = provisioningState;
             Properties.Source = source;

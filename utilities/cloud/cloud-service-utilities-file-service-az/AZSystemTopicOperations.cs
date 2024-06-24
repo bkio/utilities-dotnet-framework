@@ -10,14 +10,14 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Azure.Management.EventGrid;
 using Microsoft.Rest;
-using CloudServiceUtilities_BFileService_AZ.Models;
+using CloudServiceUtilities_FileService_AZ.Models;
 
-namespace CloudServiceUtilities_BFileService_AZ
+namespace CloudServiceUtilities_FileService_AZ
 {
     public class AZSystemTopicOperations
     {
         private const string API_VERSION = "api-version=2020-04-01-preview";
-        private EventGridManagementClient Client;
+        private readonly EventGridManagementClient Client;
 
         public AZSystemTopicOperations(EventGridManagementClient _Client)
         {

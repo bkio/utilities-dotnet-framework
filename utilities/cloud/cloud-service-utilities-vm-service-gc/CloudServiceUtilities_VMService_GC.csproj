@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Apis.Compute.v1" Version="1.55.0.2553" />
+    <PackageReference Include="Google.Apis.Compute.v1" Version="1.68.0.3442" />
   </ItemGroup>
 
   <ItemGroup>

@@ -11,8 +11,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Messaging.EventGrid" Version="4.8.1" />
-    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.38.0" />
+    <PackageReference Include="Azure.Messaging.EventGrid" Version="4.24.0" />
+    <PackageReference Include="Microsoft.Azure.Management.EventGrid" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.38.1" />
     <PackageReference Include="Microsoft.Azure.ServiceBus" Version="5.2.0" />
   </ItemGroup>
 

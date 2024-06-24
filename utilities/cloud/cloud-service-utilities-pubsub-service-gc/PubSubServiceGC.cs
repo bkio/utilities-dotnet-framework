@@ -352,6 +352,7 @@ namespace CloudServiceUtilities.PubSubServices
         /// <para>Check <seealso cref="IPubSubServiceInterface.Subscribe"/> for detailed documentation</para>
         ///
         /// </summary>
+        [Obsolete]
         public bool Subscribe(
             string _MemoryScopeKey,
             Action<string, JObject> _OnMessage,
@@ -410,6 +411,7 @@ namespace CloudServiceUtilities.PubSubServices
         /// <para>Check <seealso cref="IPubSubServiceInterface.CustomSubscribe"/> for detailed documentation</para>
         ///
         /// </summary>
+        [Obsolete]
         public bool CustomSubscribe(
             string _CustomTopic,
             Action<string, string> _OnMessage,
@@ -568,7 +570,7 @@ namespace CloudServiceUtilities.PubSubServices
                         ResourceAsResourceName = TopicInstance,
                         Policy = NewPolicy
                     };
-                    var Response = Client.SetIamPolicy(Request);
+                    var Response = Client.IAMPolicyClient.SetIamPolicy(Request);
                     if (Response == null)
                     {
                         return false;

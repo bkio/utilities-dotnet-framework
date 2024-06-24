@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.CloudWatchLogs" Version="3.7.2.12" />
+    <PackageReference Include="AWSSDK.CloudWatchLogs" Version="3.7.305.49" />
   </ItemGroup>
 
   <ItemGroup>
