@@ -212,5 +212,26 @@ namespace CloudServiceUtilities.LogServices
                 return true;
             }
         }
+
+        /// <summary>
+        ///
+        /// <para>GetLogs:</para>
+        ///
+        /// <para>Get logs from the logging service</para>
+        ///
+        /// <para>Check <seealso cref="ILogServiceInterface.GetLogs"/> for detailed documentation</para>
+        ///
+        /// </summary>
+        public bool GetLogs(
+            string _LogGroupName,
+            string _LogStreamName,
+            out List<LogParametersStruct> _Logs,
+            out string _NewPageToken,
+            string _PreviousPageToken = null,
+            int _PageSize = 20,
+            Action<string> _ErrorMessageAction = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

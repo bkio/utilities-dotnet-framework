@@ -9,6 +9,8 @@ using Google.Cloud.Logging.Type;
 using Google.Cloud.Logging.V2;
 using Grpc.Auth;
 using CommonUtilities;
+using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 
 namespace CloudServiceUtilities.LogServices
 {
@@ -102,7 +104,7 @@ namespace CloudServiceUtilities.LogServices
 
                         }.Build();
                     }
-                    
+
                     if (LogServiceClient != null)
                     {
                         bInitializationSucceed = true;
@@ -160,16 +162,10 @@ namespace CloudServiceUtilities.LogServices
             }
             else
             {
-                if (!Utility.CalculateStringMD5(DateTime.Now.Subtract(DateTime.MinValue.AddYears(1969)).TotalMilliseconds.ToString(), out string Timestamp, _ErrorMessageAction))
-                {
-                    _ErrorMessageAction?.Invoke("LogServiceGC->WriteLogs: Timestamp generation has failed.");
-                    return false;
-                }
-
                 _LogGroupName = Utility.EncodeStringForTagging(_LogGroupName);
                 _LogStreamName = Utility.EncodeStringForTagging(_LogStreamName);
 
-                string StreamIDBase = $"{_LogGroupName}-{_LogStreamName}-{Timestamp}";
+                string StreamIDBase = $"{_LogGroupName}-{_LogStreamName}";
                 try
                 {
                     var LogEntries = new LogEntry[_Messages.Count];
@@ -179,7 +175,7 @@ namespace CloudServiceUtilities.LogServices
                     {
                         LogEntries[i] = new LogEntry
                         {
-                            LogName = new LogName(ProjectID, $"{StreamIDBase}-{(i + 1)}").ToString(),
+                            LogName = new LogName(ProjectID, StreamIDBase).ToString(),
                             TextPayload = Message.Message
                         };
 
@@ -223,6 +219,94 @@ namespace CloudServiceUtilities.LogServices
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        ///
+        /// <para>GetLogs:</para>
+        ///
+        /// <para>Get logs from the logging service</para>
+        ///
+        /// <para>Check <seealso cref="ILogServiceInterface.GetLogs"/> for detailed documentation</para>
+        ///
+        /// </summary>
+        public bool GetLogs(
+            string _LogGroupName,
+            string _LogStreamName,
+            out List<LogParametersStruct> _Logs,
+            out string _NewPageToken,
+            string _PreviousPageToken = null,
+            int _PageSize = 20,
+            Action<string> _ErrorMessageAction = null)
+        {
+            _Logs = new List<LogParametersStruct>();
+            _NewPageToken = null;
+
+            _LogGroupName = Utility.EncodeStringForTagging(_LogGroupName);
+            _LogStreamName = Utility.EncodeStringForTagging(_LogStreamName);
+
+            string StreamIDBase = $"{_LogGroupName}-{_LogStreamName}";
+
+            var Request = new ListLogEntriesRequest()
+            {
+                PageSize = _PageSize,
+                OrderBy = "timestamp desc"
+            };
+            Request.ResourceNames.Add($"projects/{ProjectID}/logs/{StreamIDBase}");
+            if (!string.IsNullOrEmpty(_PreviousPageToken))
+            {
+                Request.PageToken = _PreviousPageToken;
+            }
+
+            try
+            {
+                var Result = LogServiceClient.ListLogEntries(Request);
+                var ResultPage = Result.ReadPage(_PageSize);
+                foreach (var LogEntry in ResultPage)
+                {
+                    if (LogEntry.PayloadCase == LogEntry.PayloadOneofCase.None) continue;
+
+                    var LogAsString = "";
+                    switch (LogEntry.PayloadCase)
+                    {
+                        case LogEntry.PayloadOneofCase.TextPayload:
+                            LogAsString = LogEntry.TextPayload;
+                            break;
+                        case LogEntry.PayloadOneofCase.JsonPayload:
+                            LogAsString = JsonFormatter.Default.Format(LogEntry.JsonPayload);
+                            break;
+                        case LogEntry.PayloadOneofCase.ProtoPayload:
+                            LogAsString = JsonFormatter.Default.Format(LogEntry.ProtoPayload.Unpack<Struct>());
+                            break;
+                    }
+
+                    switch (LogEntry.Severity)
+                    {
+                        case LogSeverity.Debug:
+                            _Logs.Add(new LogParametersStruct(ELogServiceLogType.Debug, LogAsString));
+                            break;
+                        case LogSeverity.Warning:
+                            _Logs.Add(new LogParametersStruct(ELogServiceLogType.Warning, LogAsString));
+                            break;
+                        case LogSeverity.Error:
+                            _Logs.Add(new LogParametersStruct(ELogServiceLogType.Error, LogAsString));
+                            break;
+                        case LogSeverity.Critical:
+                            _Logs.Add(new LogParametersStruct(ELogServiceLogType.Critical, LogAsString));
+                            break;
+                        default:
+                            _Logs.Add(new LogParametersStruct(ELogServiceLogType.Info, LogAsString));
+                            break;
+                    }
+                }
+                _NewPageToken = ResultPage.NextPageToken;
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"LogServiceGC->GetLogs: {e.Message}, Trace: {e.StackTrace}");
+                return false;
+            }
+            return true;
         }
     }
 }

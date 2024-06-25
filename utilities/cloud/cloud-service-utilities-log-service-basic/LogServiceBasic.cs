@@ -20,5 +20,9 @@ namespace CloudServiceUtilities.LogServices
             }
             return true;
         }
+        public bool GetLogs(string _LogGroupName, string _LogStreamName, out List<LogParametersStruct> _Logs, out string _NewPageToken, string _PreviousPageToken = null, int _PageSize = 20, Action<string> _ErrorMessageAction = null)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
