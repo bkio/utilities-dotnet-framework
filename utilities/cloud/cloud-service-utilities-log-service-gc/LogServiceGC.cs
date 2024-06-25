@@ -250,9 +250,13 @@ namespace CloudServiceUtilities.LogServices
             var Request = new ListLogEntriesRequest()
             {
                 PageSize = _PageSize,
-                OrderBy = "timestamp desc"
+                OrderBy = "timestamp desc",
+                Filter = $"logName=\"projects/{ProjectID}/logs/{StreamIDBase}\""
             };
-            Request.ResourceNames.Add($"projects/{ProjectID}/logs/{StreamIDBase}");
+
+            var ResourceName = $"projects/{ProjectID}";
+            Request.ResourceNames.Add(ResourceName);
+
             if (!string.IsNullOrEmpty(_PreviousPageToken))
             {
                 Request.PageToken = _PreviousPageToken;
@@ -303,7 +307,7 @@ namespace CloudServiceUtilities.LogServices
             }
             catch (Exception e)
             {
-                _ErrorMessageAction?.Invoke($"LogServiceGC->GetLogs: {e.Message}, Trace: {e.StackTrace}");
+                _ErrorMessageAction?.Invoke($"LogServiceGC->GetLogs: {e.Message}, Trace: {e.StackTrace}, ResourceName: " + ResourceName);
                 return false;
             }
             return true;
