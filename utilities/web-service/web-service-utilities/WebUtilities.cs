@@ -2,8 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.WebSockets;
 using CommonUtilities;
 
 namespace WebServiceUtilities
@@ -44,26 +46,34 @@ namespace WebServiceUtilities
             }
         }
 
-        public static bool DoesContextContainHeader(out List<string> _HeaderValues, out string _CaseSensitive_FoundHeaderKey, HttpListenerContext _Context, string _HeaderKey)
+        public static bool DoesContextContainHeader(out List<string> _HeaderValues, out string _CaseSensitive_FoundHeaderKey, NameValueCollection _NVC, string _HeaderKey)
         {
             _CaseSensitive_FoundHeaderKey = null;
 
             _HeaderKey = _HeaderKey.ToLower();
             _HeaderValues = new List<string>();
 
-            foreach (var RequestKey in _Context.Request.Headers.AllKeys)
+            foreach (var RequestKey in _NVC.AllKeys)
             {
                 string Key = RequestKey.ToLower();
                 if (Key == _HeaderKey)
                 {
                     _CaseSensitive_FoundHeaderKey = RequestKey;
-                    foreach (var HeaderValue in _Context.Request.Headers.GetValues(RequestKey))
+                    foreach (var HeaderValue in _NVC.GetValues(RequestKey))
                     {
                         _HeaderValues.Add(HeaderValue);
                     }
                 }
             }
             return _HeaderValues.Count > 0;
+        }
+        public static bool DoesContextContainHeader(out List<string> _HeaderValues, out string _CaseSensitive_FoundHeaderKey, HttpListenerContext _Context, string _HeaderKey)
+        {
+            return DoesContextContainHeader(out _HeaderValues, out _CaseSensitive_FoundHeaderKey, _Context.Request.Headers, _HeaderKey);
+        }
+        public static bool DoesContextContainHeader(out List<string> _HeaderValues, out string _CaseSensitive_FoundHeaderKey, WebSocketContext _Context, string _HeaderKey)
+        {
+            return DoesContextContainHeader(out _HeaderValues, out _CaseSensitive_FoundHeaderKey, _Context.Headers, _HeaderKey);
         }
 
         public static string ReplaceHostPart(string Source, string NewHostname)
