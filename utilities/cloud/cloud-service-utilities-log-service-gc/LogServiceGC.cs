@@ -151,7 +151,6 @@ namespace CloudServiceUtilities.LogServices
             Action<string> _ErrorMessageAction = null)
         {
             if (_Messages == null || _Messages.Count == 0) return false;
-
             if (_bAsync)
             {
                 TaskWrapper.Run(() =>
@@ -160,63 +159,61 @@ namespace CloudServiceUtilities.LogServices
                 });
                 return true;
             }
-            else
+
+            _LogGroupName = Utility.EncodeStringForTagging(_LogGroupName);
+            _LogStreamName = Utility.EncodeStringForTagging(_LogStreamName);
+
+            string StreamIDBase = $"{_LogGroupName}-{_LogStreamName}";
+            try
             {
-                _LogGroupName = Utility.EncodeStringForTagging(_LogGroupName);
-                _LogStreamName = Utility.EncodeStringForTagging(_LogStreamName);
+                var LogEntries = new LogEntry[_Messages.Count];
 
-                string StreamIDBase = $"{_LogGroupName}-{_LogStreamName}";
-                try
+                int i = 0;
+                foreach (var Message in _Messages)
                 {
-                    var LogEntries = new LogEntry[_Messages.Count];
-
-                    int i = 0;
-                    foreach (var Message in _Messages)
+                    LogEntries[i] = new LogEntry
                     {
-                        LogEntries[i] = new LogEntry
-                        {
-                            LogName = new LogName(ProjectID, StreamIDBase).ToString(),
-                            TextPayload = Message.Message
-                        };
+                        LogName = new LogName(ProjectID, StreamIDBase).ToString(),
+                        TextPayload = Message.Message
+                    };
 
-                        switch (Message.LogType)
-                        {
-                            case ELogServiceLogType.Debug:
-                                LogEntries[i].Severity = LogSeverity.Debug;
-                                break;
-                            case ELogServiceLogType.Info:
-                                LogEntries[i].Severity = LogSeverity.Info;
-                                break;
-                            case ELogServiceLogType.Warning:
-                                LogEntries[i].Severity = LogSeverity.Warning;
-                                break;
-                            case ELogServiceLogType.Error:
-                                LogEntries[i].Severity = LogSeverity.Error;
-                                break;
-                            case ELogServiceLogType.Critical:
-                                LogEntries[i].Severity = LogSeverity.Critical;
-                                break;
-                        }
-
-                        i++;
+                    switch (Message.LogType)
+                    {
+                        case ELogServiceLogType.Debug:
+                            LogEntries[i].Severity = LogSeverity.Debug;
+                            break;
+                        case ELogServiceLogType.Info:
+                            LogEntries[i].Severity = LogSeverity.Info;
+                            break;
+                        case ELogServiceLogType.Warning:
+                            LogEntries[i].Severity = LogSeverity.Warning;
+                            break;
+                        case ELogServiceLogType.Error:
+                            LogEntries[i].Severity = LogSeverity.Error;
+                            break;
+                        case ELogServiceLogType.Critical:
+                            LogEntries[i].Severity = LogSeverity.Critical;
+                            break;
                     }
 
-                    LogServiceClient.WriteLogEntries(
-                        new LogName(ProjectID, StreamIDBase),
-                        ResourceName,
-                        new Dictionary<string, string>()
-                        {
-                            ["LogGroup"] = _LogGroupName,
-                            ["LogStream"] = _LogStreamName
-                        },
-                        LogEntries);
+                    i++;
+                }
 
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    _ErrorMessageAction?.Invoke($"LogServiceGC->WriteLogs: {e.Message}, Trace: {e.StackTrace}");
-                }
+                LogServiceClient.WriteLogEntries(
+                    new LogName(ProjectID, StreamIDBase),
+                    ResourceName,
+                    new Dictionary<string, string>()
+                    {
+                        ["LogGroup"] = _LogGroupName,
+                        ["LogStream"] = _LogStreamName
+                    },
+                    LogEntries);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                _ErrorMessageAction?.Invoke($"LogServiceGC->WriteLogs: {e.Message}, Trace: {e.StackTrace}");
             }
             return false;
         }

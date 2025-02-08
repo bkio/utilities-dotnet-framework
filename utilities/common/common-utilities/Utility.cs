@@ -874,6 +874,30 @@ namespace CommonUtilities
             return WebUtility.UrlDecode(_Input.Replace("@pPp@", "%"));
         }
 
+        public static string SanitizeElasticIndexName(string _IndexName)
+        {
+            // Convert to lowercase
+            _IndexName = _IndexName.ToLower();
+
+            // Remove illegal characters
+            _IndexName = Regex.Replace(_IndexName, @"[\\/ *?""<>|,#]", "");
+
+            // Ensure it starts with a letter or number
+            if (!Regex.IsMatch(_IndexName, @"^[a-z0-9]"))
+            {
+                _IndexName = "log_" + _IndexName;
+            }
+
+            // Limit length (max 255 chars)
+            if (_IndexName.Length > 255)
+            {
+                _IndexName = _IndexName.Substring(0, 255);
+            }
+
+            return _IndexName;
+        }
+
+
         public static void DeleteFolderContent(string _Path)
         {
             try
