@@ -111,24 +111,23 @@ namespace CloudServiceUtilities.LogServices
                     throw new Exception($"Elasticsearch query failed: {SearchTask.Result.DebugInformation}");
                 }
 
-                foreach (var Hit in SearchTask.Result.Hits)
+                if (SearchTask.Result.Hits != null && SearchTask.Result.Hits.Count > 0)
                 {
-                    var Entry = Hit.Source;
-                    if (Entry == null) continue;
-
-                    _Logs.Add(new LogParametersStruct(Entry.Severity?.ToLower() switch
+                    foreach (var Hit in SearchTask.Result.Hits)
                     {
-                        "debug" => ELogServiceLogType.Debug,
-                        "info" => ELogServiceLogType.Info,
-                        "warning" => ELogServiceLogType.Warning,
-                        "error" => ELogServiceLogType.Error,
-                        "critical" => ELogServiceLogType.Critical,
-                        _ => ELogServiceLogType.Info
-                    }, Entry.Message));
-                }
+                        var Entry = Hit.Source;
+                        if (Entry == null) continue;
 
-                if (SearchTask.Result.Hits.Count > 0)
-                {
+                        _Logs.Add(new LogParametersStruct(Entry.Severity?.ToLower() switch
+                        {
+                            "debug" => ELogServiceLogType.Debug,
+                            "info" => ELogServiceLogType.Info,
+                            "warning" => ELogServiceLogType.Warning,
+                            "error" => ELogServiceLogType.Error,
+                            "critical" => ELogServiceLogType.Critical,
+                            _ => ELogServiceLogType.Info
+                        }, Entry.Message));
+                    }
                     _NewPageToken = (FromValue + _PageSize).ToString();
                 }
             }
