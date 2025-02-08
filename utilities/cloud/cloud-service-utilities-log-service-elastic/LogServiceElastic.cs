@@ -111,7 +111,17 @@ namespace CloudServiceUtilities.LogServices
                     throw new Exception($"Elasticsearch query failed: {SearchTask.Result.DebugInformation}");
                 }
 
-                if (SearchTask.Result.Hits != null && SearchTask.Result.Hits.Count > 0)
+                bool bAreThereHits;
+                try
+                {
+                    bAreThereHits = SearchTask.Result.Hits != null && SearchTask.Result.Hits.Count > 0;
+                }
+                catch (Exception) 
+                {
+                    bAreThereHits = false;
+                }
+
+                if (bAreThereHits)
                 {
                     foreach (var Hit in SearchTask.Result.Hits)
                     {
