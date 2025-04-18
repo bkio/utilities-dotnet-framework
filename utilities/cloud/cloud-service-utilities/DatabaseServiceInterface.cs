@@ -89,7 +89,7 @@ namespace CloudServiceUtilities
 
         protected void AddKeyToJson(JObject Destination, string _KeyName, PrimitiveType _KeyValue)
         {
-            if (Destination != null && !Destination.ContainsKey(_KeyName))
+            if (Destination != null)
             {
                 Destination[_KeyName] = FromPrimitiveTypeToJToken(_KeyValue);
             }
